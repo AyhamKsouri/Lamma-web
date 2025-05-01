@@ -1,0 +1,159 @@
+/* 1) Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 2) Theme variables */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 262 83% 64%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 244 76% 59%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  /* …add other vars you need… */
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  /* …your dark‐mode overrides… */
+}
+
+/* 3) Global resets & typography */
+@layer base {
+  body {
+    @apply m-0 font-sans leading-relaxed font-normal
+           bg-background text-foreground transition-colors duration-300;
+  }
+  a {
+    @apply font-medium text-indigo-600 dark:text-white no-underline;
+  }
+  a:hover {
+    @apply text-indigo-700 dark:text-indigo-300;
+  }
+  button {
+    @apply rounded-lg border border-transparent px-4 py-2 text-base font-medium
+           bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100
+           cursor-pointer transition-colors duration-200;
+  }
+  button:hover {
+    @apply bg-gray-200 dark:bg-gray-700;
+  }
+  button:focus,
+  button:focus-visible {
+    @apply outline-none ring-2 ring-indigo-500;
+  }
+}
+
+/* 4) Keyframes (float, pulse-subtle, bounce-soft, slide-right) */
+@layer utilities {
+  @keyframes float {
+    0%   { transform: translateY(0); }
+    50%  { transform: translateY(-20px); }
+    100% { transform: translateY(0); }
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  @keyframes pulse-subtle {
+    0%   { opacity: 0.7; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.7; }
+  }
+  .animate-pulse-subtle {
+    animation: pulse-subtle 3s ease-in-out infinite alternate;
+    will-change: opacity;
+  }
+
+  @keyframes bounce-soft {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-20px); }
+  }
+  .animate-bounce-soft {
+    animation: bounce-soft 2s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  @keyframes slide-right {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .animate-slide-right {
+    animation: slide-right 8s linear infinite;
+    will-change: transform;
+  }
+  @keyframes slide-in-right {
+    0%   { transform: translateX(50px); opacity: 0; }
+    100% { transform: translateX(0);     opacity: 1; }
+  }
+  .animate-slide-in-right {
+    animation: slide-in-right 0.6s ease-out forwards;
+  }
+  
+  @keyframes slide-up {
+    0%   { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0);     opacity: 1; }
+  }
+  .animate-slide-up {
+    animation: slide-up 0.6s ease-out forwards;
+  }
+  
+  @keyframes bounce-soft {
+    0%, 100% { transform: translateY(0);    }
+    50%      { transform: translateY(-10px);}
+  }
+  .animate-bounce-soft {
+    animation: bounce-soft 2s ease-in-out infinite alternate;
+  }
+  
+  .animation-delay-100 { animation-delay: 0.1s; }
+  .animation-delay-200 { animation-delay: 0.2s; }
+  .animation-delay-300 { animation-delay: 0.3s; }
+  .animation-delay-400 { animation-delay: 0.4s; }
+}
+
+/* 5) Custom utilities (layout-split, gradients, colors, etc.) */
+@layer utilities {
+  /* Responsive split layout */
+  .layout-split {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+  }
+
+  /* Mesh gradient for page background */
+  .bg-mesh-gradient {
+    background-color: #8B5CF6;
+    background-image:
+      radial-gradient(at 40% 20%, #4F46E5 0px, transparent 50%),
+      radial-gradient(at 80% 0%,   #EC4899 0px, transparent 50%),
+      radial-gradient(at 0% 50%,   #8B5CF6 0px, transparent 50%);
+  }
+
+  /* Frosted-glass overlay */
+  .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .bg-gradient-purple {
+    background: linear-gradient(135deg, #8B5CF6 0%, #4F46E5 100%);
+  }
+  
+  /* Map CSS vars to Tailwind classes */
+  .bg-background             { background-color: hsl(var(--background)); }
+  .text-foreground           { color:            hsl(var(--foreground)); }
+  .bg-card                   { background-color: hsl(var(--card)); }
+  .text-card-foreground      { color:            hsl(var(--card-foreground)); }
+  .text-muted-foreground     { color:            hsl(var(--muted-foreground)); }
+  .border-secondary-foreground { border-color:   hsl(var(--secondary-foreground)); }
+  .bg-primary                { background-color: hsl(var(--primary)); }
+  .text-primary-foreground   { color:            hsl(var(--primary-foreground)); }
+  .border-muted              { border-color:     hsl(var(--muted)); }
+}
