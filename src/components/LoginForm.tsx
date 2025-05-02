@@ -1,22 +1,28 @@
-// src/components/auth/LoginForm.tsx
 import React, { useState } from 'react';
-import { Eye, EyeOff, Facebook as FacebookIcon } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Facebook as FacebookIcon,
+} from 'lucide-react';
+import { Input } from '@/components/ui/input'; // Add this import
+import { Label } from '@/components/ui/label'
 
 interface LoginFormProps {
   onToggleForm: () => void;
 }
 
 export default function LoginForm({ onToggleForm }: LoginFormProps) {
-  const [email, setEmail]               = useState('');
-  const [password, setPassword]         = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 space-y-6 relative z-10">
-      {/* Logo/Icon */}
+      {/* Logo */}
       <div className="flex justify-center">
         <div className="bg-purple-600 rounded-full p-4">
-          {/* static logo/icon */}
           <EyeOff className="w-6 h-6 text-white" />
         </div>
       </div>
@@ -29,48 +35,50 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
 
       {/* Form */}
       <form className="space-y-4">
-        {/* Email */}
+        {/* Email Field */}
         <div>
           <label htmlFor="email" className="block text-sm font-medium mb-1">
             Email
           </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:border-purple-600 focus:ring-0"
-          />
-        </div>
-
-        {/* Password with inline toggle */}
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1">
-            Password
-          </label>
           <div className="relative">
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:border-purple-600 focus:ring-0"
+            <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              className="pl-10"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(v => !v)}
-              aria-label="Toggle password visibility"
-              className="absolute inset-y-0 right-0 flex items-center pr-3 bg-transparent focus:outline-none cursor-pointer text-gray-400 hover:text-gray-600"
-            >
-              {showPassword
-                ? <EyeOff className="w-5 h-5" />
-                : <Eye    className="w-5 h-5" />}
-            </button>
           </div>
         </div>
 
+        {/* Password */}
+        <div className="space-y-1">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Create a password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="pl-10 pr-10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground bg-transparent hover:bg-transparent focus:bg-transparent"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword
+                  ? <EyeOff className="h-5 w-5" />
+                  : <Eye    className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
         {/* Remember + Forgot */}
         <div className="flex items-center justify-between text-sm">
           <label className="flex items-center space-x-2">
@@ -80,7 +88,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
           <button
             type="button"
             onClick={() => {/* handle forgot */}}
-            className="text-purple-600 hover:underline bg-transparent p-0 focus:outline-none"
+            className="text-purple-600 hover:underline bg-transparent hover:bg-transparent focus:bg-transparent p-0 focus:outline-none"
           >
             Forgot password?
           </button>
@@ -96,9 +104,12 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
       </form>
 
       {/* Divider */}
-      <div className="relative text-xs text-gray-500 uppercase text-center my-4">
-        <span className="bg-white px-2">Or continue with</span>
-        <div className="absolute inset-y-0 w-full top-1/2    border-t border-gray-200" />
+      <div className="flex items-center my-4">
+        <hr className="flex-grow border-t border-gray-300" />
+        <span className="px-3 text-xs uppercase text-gray-500 bg-white">
+          Or continue with
+        </span>
+        <hr className="flex-grow border-t border-gray-300" />
       </div>
 
       {/* Social Buttons */}
@@ -121,10 +132,10 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
 
       {/* Footer */}
       <p className="text-center text-sm text-gray-500 mt-6">
-        Don’t have an account?{' '}
+        Don't have an account?{' '}
         <button
           onClick={onToggleForm}
-          className="text-purple-600 hover:underline bg-transparent focus:outline-none"
+          className="text-purple-600 hover:underline bg-transparent hover:bg-transparent focus:bg-transparent p-0 focus:outline-none"
         >
           Sign Up
         </button>

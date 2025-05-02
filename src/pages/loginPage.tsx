@@ -1,33 +1,41 @@
-import React from 'react';
-import AuthBackground from '@/components/AuthBackground';
-import EventInfoCard from '@/components/EventInfoCard';
-import LoginForm from '@/components/LoginForm';
+// src/pages/LoginPage.tsx
+import React, { useState } from 'react'
+import AuthBackground from '@/components/AuthBackground'
+import EventInfoCard from '@/components/EventInfoCard'
+import LoginForm from '@/components/LoginForm'
+import SignupForm from '@/components/SignupForm'
 
 const LoginPage: React.FC = () => {
-  const noop = () => {};
+  const [isLogin, setIsLogin] = useState(true)
+  const toggleForm = () => setIsLogin(prev => !prev)
 
   return (
-    <div className="min-h-screen relative w-full flex items-center justify-center p-4">
+    <div className="min-h-screen relative flex items-center justify-center bg-background text-foreground">
+      {/* 1) Background animations */}
       <AuthBackground />
 
-      <div className="z-10 w-full max-w-6xl mx-auto layout-split items-center gap-8">
-        {/* Left panel (desktop) */}
-        <div className="hidden md:flex justify-center animate-slide-in-right">
+      {/* 2) Centered content (forms + feature card) */}
+      <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 p-4">
+        {/* Left side on desktop */}
+        <div className="hidden md:flex items-center justify-center">
           <EventInfoCard />
         </div>
 
-        {/* Login form */}
-        <div className="flex justify-center animate-slide-in-right animation-delay-200">
-          <LoginForm onToggleForm={noop} />
+        {/* Login / Signup form */}
+        <div className="flex items-center justify-center">
+          {isLogin
+            ? <LoginForm  onToggleForm={toggleForm} />
+            : <SignupForm onToggleForm={toggleForm} />
+          }
         </div>
 
-        {/* Left panel (mobile) */}
-        <div className="md:hidden flex justify-center mt-8 animate-slide-in-right animation-delay-400">
+        {/* On mobile, show feature card below form */}
+        <div className="md:hidden flex items-center justify-center mt-8">
           <EventInfoCard />
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default LoginPage;
+export default LoginPage

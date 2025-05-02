@@ -5,7 +5,7 @@
 
 /* 2) Theme variables */
 :root {
-  --background: 0 0% 100%;
+  --background: transparent;
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
   --card-foreground: 222.2 84% 4.9%;
@@ -17,20 +17,18 @@
   --secondary-foreground: 210 40% 98%;
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
-  /* …add other vars you need… */
 }
 
 .dark {
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
-  /* …your dark‐mode overrides… */
 }
 
 /* 3) Global resets & typography */
 @layer base {
   body {
     @apply m-0 font-sans leading-relaxed font-normal
-           bg-background text-foreground transition-colors duration-300;
+           bg-transparent text-foreground transition-colors duration-300;
   }
   a {
     @apply font-medium text-indigo-600 dark:text-white no-underline;
@@ -52,7 +50,7 @@
   }
 }
 
-/* 4) Keyframes (float, pulse-subtle, bounce-soft, slide-right) */
+/* 4) Keyframes and Animations */
 @layer utilities {
   @keyframes float {
     0%   { transform: translateY(0); }
@@ -91,9 +89,10 @@
     animation: slide-right 8s linear infinite;
     will-change: transform;
   }
+
   @keyframes slide-in-right {
     0%   { transform: translateX(50px); opacity: 0; }
-    100% { transform: translateX(0);     opacity: 1; }
+    100% { transform: translateX(0);    opacity: 1; }
   }
   .animate-slide-in-right {
     animation: slide-in-right 0.6s ease-out forwards;
@@ -101,34 +100,26 @@
   
   @keyframes slide-up {
     0%   { transform: translateY(20px); opacity: 0; }
-    100% { transform: translateY(0);     opacity: 1; }
+    100% { transform: translateY(0);    opacity: 1; }
   }
   .animate-slide-up {
     animation: slide-up 0.6s ease-out forwards;
   }
-  
-  @keyframes bounce-soft {
-    0%, 100% { transform: translateY(0);    }
-    50%      { transform: translateY(-10px);}
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
-  .animate-bounce-soft {
-    animation: bounce-soft 2s ease-in-out infinite alternate;
-  }
-  
-  .animation-delay-100 { animation-delay: 0.1s; }
-  .animation-delay-200 { animation-delay: 0.2s; }
-  .animation-delay-300 { animation-delay: 0.3s; }
-  .animation-delay-400 { animation-delay: 0.4s; }
 }
 
-/* 5) Custom utilities (layout-split, gradients, colors, etc.) */
+/* 5) Custom utilities and components */
 @layer utilities {
-  /* Responsive split layout */
+  /* Layout utilities */
   .layout-split {
     @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
   }
 
-  /* Mesh gradient for page background */
+  /* Background utilities */
   .bg-mesh-gradient {
     background-color: #8B5CF6;
     background-image:
@@ -137,16 +128,16 @@
       radial-gradient(at 0% 50%,   #8B5CF6 0px, transparent 50%);
   }
 
-  /* Frosted-glass overlay */
   .backdrop-blur-md {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
+
   .bg-gradient-purple {
     background: linear-gradient(135deg, #8B5CF6 0%, #4F46E5 100%);
   }
-  
-  /* Map CSS vars to Tailwind classes */
+
+  /* Theme variable mappings */
   .bg-background             { background-color: hsl(var(--background)); }
   .text-foreground           { color:            hsl(var(--foreground)); }
   .bg-card                   { background-color: hsl(var(--card)); }
@@ -156,4 +147,94 @@
   .bg-primary                { background-color: hsl(var(--primary)); }
   .text-primary-foreground   { color:            hsl(var(--primary-foreground)); }
   .border-muted              { border-color:     hsl(var(--muted)); }
+
+  /* Animation delays */
+  .animation-delay-100 { animation-delay: 0.1s; }
+  .animation-delay-200 { animation-delay: 0.2s; }
+  .animation-delay-300 { animation-delay: 0.3s; }
+  .animation-delay-350 { animation-delay: 0.35s; }
+  .animation-delay-400 { animation-delay: 0.4s; }
+  .animation-delay-450 { animation-delay: 0.45s; }
+  .animation-delay-500 { animation-delay: 0.5s; }
+  .animation-delay-600 { animation-delay: 0.6s; }
+}
+
+/* 6) Sign-up Form Components */
+@layer components {
+  .card {
+    width: 100%;
+    max-width: 28rem;
+    opacity: 0;
+    animation: slide-up 0.6s ease-out forwards;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: none;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+  }
+
+  .logo-container {
+    height: 3rem;
+    width: 3rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  .title {
+    text-align: center;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #EC4899, #8B5CF6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .input-field {
+    padding-left: 2.5rem;
+    opacity: 0;
+    animation: slide-up 0.6s ease-out forwards;
+    transition: all 0.3s;
+  }
+
+  .input-field:hover,
+  .input-field:focus {
+    border-color: #EC4899;
+  }
+
+  .button {
+    width: 100%;
+    background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
+    opacity: 0;
+    animation: slide-up 0.6s ease-out forwards;
+    animation-delay: 0.4s;
+    transition: all 0.3s;
+  }
+
+  .button:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+
+  .button:active {
+    transform: scale(0.98);
+  }
+
+  .social-button {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .social-button:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+    transform: scale(1.02);
+  }
+
+  .social-button:active {
+    transform: scale(0.98);
+  }
 }
