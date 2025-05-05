@@ -88,7 +88,7 @@ export default function SignupForm({ onToggleForm }: SignupFormProps) {
         description: 'Account created and logged in',
       });
 
-      navigate('/Dashboard');
+      navigate('/');
     } catch (error: any) {
       console.error("❌ Signup error:", error);
       toast({

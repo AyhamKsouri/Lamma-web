@@ -37,7 +37,6 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="new-event" element={<NewEvent />} />
             {/* 404 fallback inside protected area */}
-            <Route path="*" element={<Dashboard />} />
           </Route>
         </Routes>
       </BrowserRouter>

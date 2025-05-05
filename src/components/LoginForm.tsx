@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   Eye,
   EyeOff,
@@ -9,9 +9,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // ✅ Step 1
-
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '@/context/AuthContext';
 
 interface LoginFormProps {
   onToggleForm: () => void;
@@ -22,22 +21,18 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const navigate = useNavigate();
+  const { signIn } = useContext(AuthContext);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
-      const res = await axios.post('http://localhost:3000/api/login', {
-        email,
-        password,
-      });
-
-      const token = res.data.token;
-      localStorage.setItem('token', token);
-
-      const navigate = useNavigate();
-      navigate('/dashboard');
-      console.log('Login success:', res.data);
-    } catch (err: any) {
-      console.error('Login failed', err);
+      await signIn(email, password); // ✅ Use context
+      console.log('✅ Logged in and user context set.');
+      navigate('/'); // ✅ Go to root where ProtectedRoute + Layout renders Dashboard
+    } catch (err) {
+      console.error('❌ Login failed:', err);
       alert('Invalid credentials');
     }
   };
@@ -70,6 +65,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 className="pl-10"
+                required
               />
             </div>
           </div>
@@ -90,7 +86,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
               <button
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground bg-transparent hover:bg-transparent focus:bg-transparent"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground bg-transparent"
                 aria-label="Toggle password visibility"
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -103,10 +99,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
               <input type="checkbox" className="w-4 h-4 text-purple-600 border-gray-300 rounded" />
               <span>Remember me</span>
             </label>
-            <button
-              type="button"
-              className="text-purple-600 hover:underline bg-transparent hover:bg-transparent focus:bg-transparent p-0 focus:outline-none"
-            >
+            <button type="button" className="text-purple-600 hover:underline bg-transparent p-0 focus:outline-none">
               Forgot password?
             </button>
           </div>
@@ -145,10 +138,10 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <button
             onClick={onToggleForm}
-            className="text-purple-600 hover:underline bg-transparent hover:bg-transparent focus:bg-transparent p-0 focus:outline-none"
+            className="text-purple-600 hover:underline bg-transparent p-0 focus:outline-none"
           >
             Sign Up
           </button>
