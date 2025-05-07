@@ -8,7 +8,7 @@ export const checkToken = async (): Promise<boolean> => {
   try {
     const res = await axios.get('http://localhost:3000/api/auth/check-token', {
       headers: {
-        Authorization: `Bearer ${token}`, // ✅ important
+        Authorization: token, // ✅ important
       },
     });
 

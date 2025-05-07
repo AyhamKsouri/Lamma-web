@@ -7,13 +7,19 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user } = useContext(AuthContext);
+  const { user, isChecking } = useContext(AuthContext);
 
-  // If not authenticated, redirect to login
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">
+        Checking session...
+      </div>
+    );
+  }
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // If authenticated, render children
   return <>{children}</>;
 }

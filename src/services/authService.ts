@@ -6,8 +6,6 @@ export interface AuthResponse {
   token: string;
   _id: string;
   role: string;
-  // plus whatever fields you expose in req.user.userInfo,
-  // e.g. firstName, lastName, email, etc.
   [key: string]: any;
 }
 
@@ -31,6 +29,8 @@ export const login = async (
  * Calls GET /api/auth/check-token (passport-jwt).
  */
 export const checkToken = async (): Promise<AuthResponse> => {
+  console.log("📦 Checking token...");
   const { data } = await api.get<AuthResponse>('/api/auth/check-token');
+  console.log("✅ Token is valid:", data);
   return data;
 };

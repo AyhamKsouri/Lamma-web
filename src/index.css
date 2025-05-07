@@ -5,7 +5,7 @@
 
 /* 2) Theme variables */
 :root {
-  --background: transparent;
+  --background: 0 0% 100%; /* 🟢 set a valid default background */
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
   --card-foreground: 222.2 84% 4.9%;
@@ -27,23 +27,28 @@
 /* 3) Global resets & typography */
 @layer base {
   body {
-    @apply m-0 font-sans leading-relaxed font-normal
-           bg-transparent text-foreground transition-colors duration-300;
+    @apply m-0 font-sans leading-relaxed font-normal 
+           bg-background text-foreground transition-colors duration-300;
   }
+
   a {
     @apply font-medium text-indigo-600 dark:text-white no-underline;
   }
+
   a:hover {
     @apply text-indigo-700 dark:text-indigo-300;
   }
+
   button {
     @apply rounded-lg border border-transparent px-4 py-2 text-base font-medium
            bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100
            cursor-pointer transition-colors duration-200;
   }
+
   button:hover {
     @apply bg-gray-200 dark:bg-gray-700;
   }
+
   button:focus,
   button:focus-visible {
     @apply outline-none ring-2 ring-indigo-500;
@@ -106,20 +111,18 @@
     animation: slide-up 0.6s ease-out forwards;
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
+  .animation-delay-100 { animation-delay: 0.1s; }
+  .animation-delay-200 { animation-delay: 0.2s; }
+  .animation-delay-300 { animation-delay: 0.3s; }
+  .animation-delay-400 { animation-delay: 0.4s; }
 }
 
-/* 5) Custom utilities and components */
+/* 5) Custom utilities */
 @layer utilities {
-  /* Layout utilities */
   .layout-split {
     @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
   }
 
-  /* Background utilities */
   .bg-mesh-gradient {
     background-color: #8B5CF6;
     background-image:
@@ -137,7 +140,6 @@
     background: linear-gradient(135deg, #8B5CF6 0%, #4F46E5 100%);
   }
 
-  /* Theme variable mappings */
   .bg-background             { background-color: hsl(var(--background)); }
   .text-foreground           { color:            hsl(var(--foreground)); }
   .bg-card                   { background-color: hsl(var(--card)); }
@@ -147,21 +149,11 @@
   .bg-primary                { background-color: hsl(var(--primary)); }
   .text-primary-foreground   { color:            hsl(var(--primary-foreground)); }
   .border-muted              { border-color:     hsl(var(--muted)); }
-
-  /* Animation delays */
-  .animation-delay-100 { animation-delay: 0.1s; }
-  .animation-delay-200 { animation-delay: 0.2s; }
-  .animation-delay-300 { animation-delay: 0.3s; }
-  .animation-delay-350 { animation-delay: 0.35s; }
-  .animation-delay-400 { animation-delay: 0.4s; }
-  .animation-delay-450 { animation-delay: 0.45s; }
-  .animation-delay-500 { animation-delay: 0.5s; }
-  .animation-delay-600 { animation-delay: 0.6s; }
 }
 
-/* 6) Sign-up Form Components */
+/* 6) Login Page ONLY - Scoped styles */
 @layer components {
-  .card {
+  .login-page .card {
     width: 100%;
     max-width: 36rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -170,7 +162,7 @@
     backdrop-filter: blur(12px);
   }
 
-  .logo-container {
+  .login-page .logo-container {
     height: 3rem;
     width: 3rem;
     border-radius: 9999px;
@@ -182,7 +174,7 @@
     animation: pulse 3s ease-in-out infinite;
   }
 
-  .title {
+  .login-page .title {
     text-align: center;
     font-size: 1.5rem;
     line-height: 2rem;
@@ -193,44 +185,41 @@
     color: transparent;
   }
 
-  .input-field {
+  .login-page .input-field {
     padding-left: 2.5rem;
-    /* ✂️ Removed animation + opacity */
     transition: all 0.3s;
   }
 
-  .input-field:hover,
-  .input-field:focus {
+  .login-page .input-field:hover,
+  .login-page .input-field:focus {
     border-color: #EC4899;
   }
 
-  .button {
+  .login-page .button {
     width: 100%;
     background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
-    /* ✂️ Removed animation + opacity */
     transition: all 0.3s;
   }
 
-  .button:hover {
+  .login-page .button:hover {
     opacity: 0.9;
     transform: scale(1.02);
   }
 
-  .button:active {
+  .login-page .button:active {
     transform: scale(0.98);
   }
 
-  .social-button {
+  .login-page .social-button {
     background-color: rgba(255, 255, 255, 0.5);
   }
 
-  .social-button:hover {
+  .login-page .social-button:hover {
     background-color: rgba(255, 255, 255, 0.8);
     transform: scale(1.02);
   }
 
-  .social-button:active {
+  .login-page .social-button:active {
     transform: scale(0.98);
   }
-
 }

@@ -6,11 +6,13 @@ import SignupForm from '@/components/SignupForm'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const LoginPage: React.FC = () => {
+  // ✅ This was missing
   const [isLogin, setIsLogin] = useState(true)
+
   const toggleForm = () => setIsLogin(prev => !prev)
 
   return (
-    <div className="min-h-screen relative w-full flex items-center justify-center p-4 transition-colors duration-300 bg-background text-foreground">
+    <div className="min-h-screen relative w-full flex items-center justify-center p-4 transition-colors duration-300 text-foreground">
       <AuthBackground />
 
       {/* Main Content */}
