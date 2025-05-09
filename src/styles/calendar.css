@@ -1,0 +1,335 @@
+
+/* Calendar Component Styles */
+.calendar-container {
+    @apply w-full max-w-[1400px] mx-auto px-4 py-6 animate-fade-in;
+  }
+  
+  .calendar-header {
+    @apply mb-8 text-center;
+  }
+  
+  .calendar-title {
+    @apply text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2;
+    background: linear-gradient(90deg, #8B5CF6, #EC4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .calendar-subtitle {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+  
+  .calendar-layout {
+    @apply flex flex-col lg:flex-row gap-6 min-h-[600px];
+  }
+  
+  .calendar-main {
+    @apply bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex-grow lg:w-2/3 border border-gray-100 dark:border-gray-700;
+    @apply transition-all duration-300 ease-in-out;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .calendar-side-panel {
+    @apply lg:w-1/3 space-y-4;
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .calendar-controls {
+    @apply flex items-center justify-between mb-6 transition-colors duration-200;
+  }
+  
+  .calendar-controls-left, .calendar-controls-right {
+    @apply flex gap-1;
+  }
+  
+  .calendar-nav-btn {
+    @apply rounded-lg p-2 flex items-center justify-center transition-all duration-200;
+    @apply hover:bg-gray-100 dark:hover:bg-gray-700;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50;
+  }
+  
+  .calendar-current-month {
+    @apply text-xl font-semibold flex items-center dark:text-gray-100;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-today-btn {
+    @apply ml-2 bg-primary hover:bg-primary/90 text-white rounded-md px-3 py-1;
+    @apply transition-all duration-200 ease-in-out;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50;
+  }
+  
+  .calendar-weekdays {
+    @apply grid grid-cols-7 mb-2;
+  }
+  
+  .calendar-weekday {
+    @apply text-sm font-medium text-gray-500 dark:text-gray-400 text-center py-2;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-days-grid {
+    @apply grid grid-cols-7 gap-1;
+  }
+  
+  .calendar-cell {
+    @apply aspect-square p-0.5;
+  }
+  
+  .calendar-cell-inactive {
+    @apply opacity-0;
+  }
+  
+  .calendar-day {
+    @apply w-full h-full rounded-md flex flex-col items-center justify-start p-1 text-sm transition-all relative overflow-hidden;
+    @apply hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary;
+    @apply dark:text-gray-200;
+  }
+  
+  .calendar-day-number {
+    @apply mb-auto text-center w-6 h-6 flex items-center justify-center font-medium;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-day-today {
+    @apply border-2 border-primary;
+  }
+  
+  .calendar-day-today .calendar-day-number {
+    @apply font-bold text-primary;
+  }
+  
+  .calendar-day-selected {
+    @apply bg-primary/10 dark:bg-primary/20;
+  }
+  
+  .calendar-day-has-events {
+    @apply font-semibold;
+  }
+  
+  .calendar-day-events {
+    @apply flex flex-wrap justify-center gap-0.5 mt-auto w-full;
+  }
+  
+  .calendar-day-event-indicator {
+    @apply w-1.5 h-1.5 rounded-full bg-primary;
+    @apply transition-transform duration-200 ease-in-out;
+  }
+  
+  .calendar-day-more-events {
+    @apply text-xs text-primary font-medium;
+  }
+  
+  .calendar-events-card {
+    @apply h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700;
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .calendar-events-header {
+    @apply p-4 border-b border-gray-200 dark:border-gray-700;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-events-title {
+    @apply font-semibold dark:text-gray-100;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-events-list {
+    @apply min-h-[300px] max-h-[50vh] overflow-y-auto p-4;
+  }
+  
+  .calendar-select-date {
+    @apply flex flex-col items-center justify-center h-48 text-gray-400 space-y-4;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-icon-large {
+    @apply text-gray-300 dark:text-gray-600;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-no-events {
+    @apply flex flex-col items-center justify-center h-48 text-gray-500 dark:text-gray-400 space-y-4;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-add-event-link {
+    @apply text-primary hover:underline;
+  }
+  
+  .calendar-events-grid {
+    @apply grid gap-4;
+  }
+  
+  .calendar-event-card-container {
+    @apply cursor-pointer transition-all duration-300 hover:scale-105;
+  }
+  
+  .calendar-event-card {
+    @apply overflow-hidden border-0 bg-gray-50 dark:bg-gray-800/80 rounded-lg shadow-md;
+    @apply transition-transform duration-300 ease-out;
+  }
+  
+  .calendar-event-card-selected {
+    @apply ring-2 ring-primary;
+  }
+  
+  .calendar-event-image {
+    @apply h-40 overflow-hidden;
+  }
+  
+  .calendar-event-image img {
+    @apply w-full h-full object-cover;
+    @apply transition-transform duration-500 ease-out;
+    @apply hover:scale-110;
+  }
+  
+  .calendar-event-title {
+    @apply font-semibold text-lg mb-1 dark:text-gray-100;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-event-time {
+    @apply text-sm text-gray-600 dark:text-gray-400;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-event-location {
+    @apply text-sm text-gray-600 dark:text-gray-400 mt-1;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-event-details {
+    @apply p-4 pt-0;
+  }
+  
+  .calendar-event-full-details {
+    @apply space-y-4 p-4 dark:text-gray-100;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-event-detail-title {
+    @apply text-xl font-bold dark:text-gray-100;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-event-detail-datetime {
+    @apply text-sm text-gray-600 dark:text-gray-400;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-event-detail-location {
+    @apply text-sm font-medium dark:text-gray-300;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-event-detail-description {
+    @apply mt-4 text-gray-700 dark:text-gray-300;
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  .calendar-view-details-btn {
+    @apply mt-4 w-full;
+  }
+  
+  .calendar-actions {
+    @apply flex items-center justify-between;
+  }
+  
+  .calendar-view-all-link {
+    @apply text-primary hover:underline font-medium;
+  }
+  
+  .calendar-add-event-btn {
+    @apply bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md;
+    @apply transition-all duration-200 ease-in-out;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50;
+  }
+  
+  /* Animations */
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes fadeSlideIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  
+  .calendar-event-card {
+    animation: fadeSlideIn 0.3s ease-out forwards;
+  }
+  
+  .calendar-event-card:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  
+  .calendar-event-card:nth-child(3) {
+    animation-delay: 0.2s;
+  }
+  
+  /* Hover effects */
+  .calendar-day:hover .calendar-day-event-indicator {
+    @apply scale-110;
+  }
+  
+  .calendar-event-card-container:hover .calendar-event-card {
+    @apply shadow-lg;
+  }
+  
+  /* Custom tooltip for calendar days */
+  .calendar-day {
+    position: relative;
+  }
+  
+  .calendar-day:hover::before {
+    content: attr(title);
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
+    opacity: 0;
+    animation: fadeIn 0.2s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+  
+  /* Calendar grid container with smooth transitions */
+  .calendar-grid-container {
+    @apply transition-all duration-300;
+  }
+  
+  /* Dark Mode specific enhancements */
+  .dark .calendar-main {
+    background-image: linear-gradient(to bottom, rgba(17, 24, 39, 0.8), rgba(17, 24, 39, 1));
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  }
+  
+  .dark .calendar-events-card {
+    background-image: linear-gradient(to bottom, rgba(31, 41, 55, 0.8), rgba(31, 41, 55, 1)); 
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark .calendar-day-selected {
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
+  }
+  
+  /* Glassmorphism effect for cards in dark mode */
+  .dark .calendar-event-card {
+    backdrop-filter: blur(12px);
+    background: rgba(31, 41, 55, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  

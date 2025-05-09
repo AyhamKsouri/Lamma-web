@@ -1,0 +1,117 @@
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+    100% { transform: translateY(0px); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  @keyframes slide-up {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  
+  @keyframes slide-in-right {
+    0% { transform: translateX(50px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  }
+  
+  @keyframes slide-out-right {
+    0% { transform: translateX(0); opacity: 1; }
+    100% { transform: translateX(-50px); opacity: 0; }
+  }
+  
+  @keyframes slide-right {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  
+  /* Auth specific utilities */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pulse-subtle {
+    animation: pulse 3s ease-in-out infinite;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.6s ease-out forwards;
+  }
+  
+  .animate-slide-in-right {
+    animation: slide-in-right 0.6s ease-out forwards;
+  }
+  
+  .animate-slide-out-right {
+    animation: slide-out-right 0.6s ease-out forwards;
+  }
+  
+  .animate-slide-right {
+    animation: slide-right 8s linear infinite;
+  }
+  
+  /* Animation delays */
+  .animation-delay-100 {
+    animation-delay: 0.1s;
+  }
+  
+  .animation-delay-150 {
+    animation-delay: 0.15s;
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 0.2s;
+  }
+  
+  .animation-delay-250 {
+    animation-delay: 0.25s;
+  }
+  
+  .animation-delay-300 {
+    animation-delay: 0.3s;
+  }
+  
+  .animation-delay-350 {
+    animation-delay: 0.35s;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 0.4s;
+  }
+  
+  .animation-delay-450 {
+    animation-delay: 0.45s;
+  }
+  
+  .animation-delay-500 {
+    animation-delay: 0.5s;
+  }
+  
+  .animation-delay-600 {
+    animation-delay: 0.6s;
+  }
+  
+  .animation-delay-700 {
+    animation-delay: 0.7s;
+  }
+  
+  /* Auth background styles */
+  .bg-mesh-gradient {
+    background-color: #8B5CF6;
+    background-image: radial-gradient(at 40% 20%, #4F46E5 0px, transparent 50%),
+                      radial-gradient(at 80% 0%, #EC4899 0px, transparent 50%),
+                      radial-gradient(at 0% 50%, #8B5CF6 0px, transparent 50%),
+                      radial-gradient(at 80% 50%, #4F46E5 0px, transparent 50%),
+                      radial-gradient(at 0% 100%, #8B5CF6 0px, transparent 50%),
+                      radial-gradient(at 80% 100%, #EC4899 0px, transparent 50%),
+                      radial-gradient(at 0% 0%, #8B5CF6 0px, transparent 50%);
+  }
+  
+  .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
