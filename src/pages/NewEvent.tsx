@@ -1,10 +1,17 @@
 import React, { FC, useState, FormEvent, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
+import { createEvent } from '@/services/eventService';
+import { useToast } from '@/components/ui/use-toast';
+import { AuthError } from '@/services/api';
 import '@/styles/newevent.css'
+
 const NewEvent: FC = () => {
   const navigate = useNavigate();
-  
+  const { toast } = useToast();
+  const { user, signOut } = useAuth();
+
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -14,10 +21,12 @@ const NewEvent: FC = () => {
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
   const [type, setType] = useState('other');
+  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [price, setPrice] = useState(0);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Animation variants
   const fadeIn = {
@@ -44,7 +53,7 @@ const NewEvent: FC = () => {
   };
 
   // Submit handler
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title || !startDate || !startTime || !endDate || !endTime || !location) {
       setError('Please fill in all required fields.');
@@ -54,9 +63,68 @@ const NewEvent: FC = () => {
       setError('End date/time must be after start date/time.');
       return;
     }
+
     setError('');
-    // TODO: send to backend
-    navigate('/events');
+    setIsSubmitting(true);
+
+    try {
+      // Log the data being sent
+      console.log('Submitting form with data:', {
+        title,
+        description,
+        startDate,
+        endDate,
+        startTime,
+        endTime,
+        location,
+        type,
+        visibility,
+        price,
+        hasImage: !!image
+      });
+
+      await createEvent({
+        title,
+        description,
+        startDate,
+        endDate,
+        startTime,
+        endTime,
+        location,
+        type: type as any,
+        visibility,
+        price,
+        photos: image ? [image] : undefined,
+      });
+
+      toast({
+        title: "Success",
+        description: "Event created successfully!",
+      });
+
+      navigate('/events');
+    } catch (error) {
+      console.error('Submit Error:', error);
+      
+      if (error instanceof AuthError) {
+        toast({
+          variant: "destructive",
+          title: "Session Expired",
+          description: "Your session has expired. Please sign in again.",
+        });
+        signOut();
+        navigate('/login');
+      } else {
+        setError(error instanceof Error ? error.message : 'Failed to create event');
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error instanceof Error ? error.message : 'Failed to create event',
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -188,6 +256,18 @@ const NewEvent: FC = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="form-label">Visibility<span className="text-red-500">*</span></label>
+                  <select
+                    className="form-input"
+                    value={visibility}
+                    onChange={e => setVisibility(e.target.value as 'public' | 'private')}
+                    required
+                  >
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -305,9 +385,10 @@ const NewEvent: FC = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                className="form-submit"
+                disabled={isSubmitting}
+                className="form-submit disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Event
+                {isSubmitting ? 'Creating...' : 'Create Event'}
               </motion.button>
             </motion.div>
           </motion.form>

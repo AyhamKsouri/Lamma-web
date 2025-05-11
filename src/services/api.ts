@@ -5,7 +5,6 @@ import axios, {
   AxiosResponse
 } from 'axios';
 
-// Extend the AxiosRequestConfig interface to include our custom properties
 declare module 'axios' {
   export interface InternalAxiosRequestConfig {
     _retry?: boolean;
@@ -21,7 +20,6 @@ export class AuthError extends Error {
 
 export const API_BASE = import.meta.env.VITE_API_URL as string;
 
-// Type for the refresh token response
 interface RefreshTokenResponse {
   token: string;
   refreshToken?: string;
@@ -35,7 +33,6 @@ const api: AxiosInstance = axios.create({
   }
 });
 
-// Request interceptor with proper typing
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('jwtToken');
   if (token && config.headers) {
@@ -44,7 +41,6 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// Response interceptor with retry queue and proper typing
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
@@ -71,7 +67,6 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Handle 401 errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -127,7 +122,6 @@ api.interceptors.response.use(
   }
 );
 
-// Type-safe request helpers
 export const apiClient = {
   get: <T>(url: string, config = {}) => 
     api.get<T>(url, config).then((response) => response.data),

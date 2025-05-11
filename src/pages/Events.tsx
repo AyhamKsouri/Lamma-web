@@ -1,11 +1,27 @@
 import React, { FC, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Calendar, MapPin, Clock, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getEvents, EventData } from '@/services/eventService';
 import { useAuth } from '@/context/AuthContext';
 import { AuthError } from '@/services/api';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import '@/styles/event.css';
 
-// Define categories as const to ensure type safety
+const DEFAULT_BANNER = '/default-event-banner.jpg';
+const ITEMS_PER_PAGE = 10;
+
 const categories = [
   'All',
   'Clubbing',
@@ -20,7 +36,6 @@ const categories = [
 ] as const;
 
 type Category = typeof categories[number];
-type FilteredCategory = Exclude<Category, 'All'>;
 
 interface EventsState {
   events: EventData[];
@@ -28,6 +43,8 @@ interface EventsState {
   error: string | null;
   searchTerm: string;
   selectedCategory: Category;
+  currentPage: number;
+  itemsPerPage: number;
 }
 
 const initialState: EventsState = {
@@ -36,26 +53,148 @@ const initialState: EventsState = {
   error: null,
   searchTerm: '',
   selectedCategory: 'All',
+  currentPage: 1,
+  itemsPerPage: ITEMS_PER_PAGE,
+};
+
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  totalItems: number;
+  itemsPerPage: number;
+  onItemsPerPageChange: (value: number) => void;
+}
+
+const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+  totalItems,
+  itemsPerPage,
+  onItemsPerPageChange
+}) => {
+  const getPageNumbers = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    range.push(1);
+
+    for (let i = currentPage - delta; i <= currentPage + delta; i++) {
+      if (i < totalPages && i > 1) {
+        range.push(i);
+      }
+    }
+
+    if (totalPages > 1) {
+      range.push(totalPages);
+    }
+
+    for (let i of range) {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push('...');
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+
+    return rangeWithDots;
+  };
+
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 bg-background border-t border-border">
+      <div className="text-sm text-muted-foreground mb-4 sm:mb-0">
+        Showing <span className="font-medium">{startItem}</span> to{" "}
+        <span className="font-medium">{endItem}</span> of{" "}
+        <span className="font-medium">{totalItems}</span> results
+      </div>
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium">Rows per page</p>
+          <Select
+            value={itemsPerPage.toString()}
+            onValueChange={(value) => onItemsPerPageChange(Number(value))}
+          >
+            <SelectTrigger className="h-8 w-[70px]">
+              <SelectValue placeholder={itemsPerPage} />
+            </SelectTrigger>
+            <SelectContent side="top">
+              {[10, 20, 30, 40, 50].map((pageSize) => (
+                <SelectItem key={pageSize} value={pageSize.toString()}>
+                  {pageSize}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="h-8 w-8"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center">
+            {getPageNumbers().map((page, index) => (
+              page === '...' ? (
+                <span key={`dot-${index}`} className="px-2 text-muted-foreground">
+                  ...
+                </span>
+              ) : (
+                <Button
+                  key={index}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => typeof page === 'number' && onPageChange(page)}
+                  className={`h-8 w-8 ${
+                    currentPage === page 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                      : "hover:bg-accent"
+                  }`}
+                >
+                  {page}
+                </Button>
+              )
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="h-8 w-8"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const Events: FC = () => {
   const [state, setState] = useState<EventsState>(initialState);
   const navigate = useNavigate();
-  const { reloadUser, signOut, user, isChecking } = useAuth();
+  const { user, isChecking } = useAuth();
   const { toast } = useToast();
-
-  // Check authentication status
-  useEffect(() => {
-    if (!isChecking && !user) {
-      navigate('/login');
-    }
-  }, [user, isChecking, navigate]);
 
   const handleAuthError = useCallback(() => {
     toast({
-      variant: "destructive",
-      title: "Session Expired",
-      description: "Your session has expired. Please sign in again.",
+      variant: 'destructive',
+      title: 'Session Expired',
+      description: 'Your session has expired. Please sign in again.',
       action: (
         <button
           onClick={() => navigate('/login')}
@@ -67,10 +206,9 @@ const Events: FC = () => {
     });
 
     setTimeout(() => {
-      signOut();
       navigate('/login');
     }, 5000);
-  }, [signOut, navigate, toast]);
+  }, [navigate, toast]);
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -81,62 +219,59 @@ const Events: FC = () => {
       if (err instanceof AuthError) {
         handleAuthError();
       } else {
-        setState(prev => ({
-          ...prev,
-          error: 'Failed to load events. Please try again.',
-          loading: false
-        }));
-        
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load events. Please try again.",
-        });
+        const message = err instanceof Error ? err.message : 'Failed to load events. Please try again.';
+        setState(prev => ({ ...prev, error: message, loading: false }));
+        toast({ variant: 'destructive', title: 'Error', description: message });
       }
     }
   }, [handleAuthError, toast]);
 
   useEffect(() => {
-    if (user) {
-      fetchEvents();
+    if (!isChecking) {
+      if (!user) {
+        navigate('/login');
+      } else {
+        fetchEvents();
+      }
     }
-  }, [fetchEvents, user]);
+  }, [isChecking, user, fetchEvents, navigate]);
 
-  const getFilteredEvents = useCallback(
-    (events: EventData[], category: Category, searchTerm: string) => {
-      return events
-        .filter(ev => 
-          category === 'All' || 
-          ev.category.toLowerCase() === category.toLowerCase()
-        )
-        .filter(ev => 
-          ev.title.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    },
-    []
-  );
+  const filteredEvents = state.events
+    .filter(ev =>
+      state.selectedCategory === 'All' ||
+      ev.category.toLowerCase() === state.selectedCategory.toLowerCase()
+    )
+    .filter(ev =>
+      ev.title.toLowerCase().includes(state.searchTerm.toLowerCase())
+    );
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setState(prev => ({ ...prev, searchTerm: e.target.value }));
+  const totalPages = Math.ceil(filteredEvents.length / state.itemsPerPage);
+  const startIndex = (state.currentPage - 1) * state.itemsPerPage;
+  const endIndex = startIndex + state.itemsPerPage;
+  const currentEvents = filteredEvents.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    setState(prev => ({ ...prev, currentPage: newPage }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setState(prev => ({ 
-      ...prev, 
-      selectedCategory: e.target.value as Category 
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setState(prev => ({
+      ...prev,
+      itemsPerPage: newItemsPerPage,
+      currentPage: 1
     }));
   };
 
-  const handleRetry = () => {
-    fetchEvents();
+  useEffect(() => {
+    setState(prev => ({ ...prev, currentPage: 1 }));
+  }, [state.selectedCategory, state.searchTerm]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const handleSignOut = async () => {
-    signOut();
-    navigate('/login');
-  };
-
-  // If still checking auth status, show loading
   if (isChecking) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
@@ -148,126 +283,158 @@ const Events: FC = () => {
     );
   }
 
-  const filteredEvents = getFilteredEvents(
-    state.events,
-    state.selectedCategory,
-    state.searchTerm
-  );
-
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">All Events</h2>
-        <div className="flex gap-4">
-          <Link
-            to="/new-event"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            Create Event
-          </Link>
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-          >
-            Sign Out
-          </button>
+    <div className="events-container">
+      <div className="events-hero">
+        <div className="events-hero-content">
+          <h1 className="events-hero-title">Discover Amazing Events</h1>
+          <p className="events-hero-subtitle">
+            Find and join exciting events happening near you
+          </p>
+          <div className="events-search">
+            <div className="search-wrapper">
+              <Search className="search-icon" />
+              <Input
+                type="text"
+                placeholder="Search events by name..."
+                value={state.searchTerm}
+                onChange={e => setState(prev => ({ ...prev, searchTerm: e.target.value }))}
+                className="search-input"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Search events..."
-          className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={state.searchTerm}
-          onChange={handleSearch}
-          aria-label="Search events"
-        />
-        <select
-          className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={state.selectedCategory}
-          onChange={handleCategoryChange}
-          aria-label="Filter by category"
-        >
-          {categories.map(cat => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="events-content">
+        <div className="events-filters">
+          <div className="filters-header">
+            <h2 className="filters-title">
+              <Filter className="filter-icon" /> Filter by Category
+            </h2>
+          </div>
+          <div className="category-buttons">
+            {categories.map(category => (
+              <Button
+                key={category}
+                variant={state.selectedCategory === category ? 'default' : 'outline'}
+                className={`category-button ${state.selectedCategory === category ? 'category-active' : ''}`}
+                onClick={() => setState(prev => ({ ...prev, selectedCategory: category }))}
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
+        </div>
 
-      {state.loading ? (
-        <div className="min-h-[400px] flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4" />
-            <p className="text-gray-600">Loading events...</p>
-          </div>
-        </div>
-      ) : state.error ? (
-        <div className="min-h-[400px] flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">{state.error}</p>
-            <button
-              onClick={handleRetry}
-              className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">No events found</p>
-          {state.selectedCategory !== 'All' && (
-            <button
-              onClick={() => setState(prev => ({ ...prev, selectedCategory: 'All' }))}
-              className="text-blue-600 hover:text-blue-700"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map(ev => (
-            <Link
-              key={ev.id}
-              to={`/events/${ev.id}`}
-              className="group block border rounded-lg hover:shadow-lg transition-all duration-200 overflow-hidden bg-white"
-            >
-              {ev.bannerUrl ? (
-                <img
-                  src={ev.bannerUrl}
-                  alt={ev.title}
-                  className="w-full h-40 object-cover group-hover:opacity-90 transition-opacity"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-40 bg-gray-100 flex items-center justify-center">
-                  <span className="text-gray-400">No image</span>
+        {state.loading ? (
+          <div className="events-grid">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="event-card is-loading">
+                <div className="event-banner">
+                  <Skeleton className="h-[200px] w-full" />
                 </div>
+                <CardContent className="event-content">
+                  <Skeleton className="h-6 w-3/4 mb-4" />
+                  <div className="event-details">
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-2/3 mb-2" />
+                    <Skeleton className="h-4 w-5/6" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : state.error ? (
+          <div className="events-error">
+            <div className="error-container">
+              <h3 className="error-title">Oops! Something went wrong</h3>
+              <p className="error-message">{state.error}</p>
+              <Button
+                onClick={() => fetchEvents()}
+                className="error-button"
+              >
+                Try Again
+              </Button>
+            </div>
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="events-empty">
+            <div className="empty-container">
+              <h3 className="empty-title">No events found</h3>
+              <p className="empty-message">Try adjusting your search or filters</p>
+              {state.selectedCategory !== 'All' && (
+                <Button
+                  className="empty-button"
+                  onClick={() => setState(prev => ({ ...prev, selectedCategory: 'All' }))}
+                >
+                  Clear filters
+                </Button>
               )}
-              <div className="p-4">
-                <h3 className="text-lg font-medium mb-1 group-hover:text-blue-600 transition-colors">
-                  {ev.title}
-                </h3>
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-500">
-                    {new Date(ev.startDate).toLocaleDateString()} • {ev.startTime}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Ends: {new Date(ev.endDate).toLocaleDateString()} • {ev.endTime}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {ev.location}
-                  </p>
-                </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="events-grid">
+              {currentEvents.map(event => (
+                <Link
+                  key={event.id}
+                  to={`/events/${event.id}`}
+                  className="event-card-link"
+                >
+                  <Card className="event-card">
+                    <div className="event-banner">
+                      <img
+                        src={event.bannerUrl || DEFAULT_BANNER}
+                        alt={event.title}
+                        loading="lazy"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = DEFAULT_BANNER;
+                          target.onerror = null;
+                        }}
+                        className="w-full h-[200px] object-cover"
+                      />
+                      <Badge className="event-date-badge">
+                        {formatDate(event.startDate)}
+                      </Badge>
+                      <Badge className="event-category-badge">
+                        {event.category}
+                      </Badge>
+                    </div>
+                    <CardContent className="event-content">
+                      <h3 className="event-title">{event.title}</h3>
+                      <div className="event-details">
+                        <div className="event-detail">
+                          <Clock className="event-icon" />
+                          <span>{event.startTime}</span>
+                        </div>
+                        <div className="event-detail">
+                          <MapPin className="event-icon" />
+                          <span>{event.location}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+
+            {filteredEvents.length > 0 && (
+              <div className="mt-8">
+                <Pagination
+                  currentPage={state.currentPage}
+                  totalPages={Math.max(1, totalPages)}
+                  onPageChange={handlePageChange}
+                  totalItems={filteredEvents.length}
+                  itemsPerPage={state.itemsPerPage}
+                  onItemsPerPageChange={handleItemsPerPageChange}
+                />
               </div>
-            </Link>
-          ))}
-        </div>
-      )}
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
