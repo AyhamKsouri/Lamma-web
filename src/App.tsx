@@ -1,6 +1,5 @@
-// src/App.tsx
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -11,17 +10,53 @@ import NewEvent from './pages/NewEvent';
 import EventDetails from './pages/EventDetails';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import  LoginPage  from './pages/loginPage';
+import LoginPage from './pages/loginPage';
+import NotFound from './pages/NotFound'; // Add this component
+
+// Define route configuration for better maintenance
+interface RouteConfig {
+  path: string;
+  element: React.ReactNode;
+  children?: RouteConfig[];
+}
+
+// Protected routes configuration
+const protectedRoutes: RouteConfig[] = [
+  {
+    path: '/',
+    element: <Dashboard />,
+  },
+  {
+    path: 'events',
+    element: <Events />,
+  },
+  {
+    path: 'events/:id',
+    element: <EventDetails />,
+  },
+  {
+    path: 'calendar',
+    element: <CalendarPage />,
+  },
+  {
+    path: 'profile',
+    element: <Profile />,
+  },
+  {
+    path: 'new-event',
+    element: <NewEvent />,
+  },
+];
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public route */}
+          {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
-
-          {/* All other routes require authentication */}
+          
+          {/* Protected routes wrapper */}
           <Route
             path="/"
             element={
@@ -30,14 +65,21 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="events" element={<Events />} />
-            <Route path="events/:id" element={<EventDetails />} />
-            <Route path="calendar" element={<CalendarPage />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="new-event" element={<NewEvent />} />
-            {/* 404 fallback inside protected area */}
+            {/* Dynamic route generation */}
+            {protectedRoutes.map(({ path, element }) => (
+              <Route
+                key={path}
+                path={path === '/' ? '' : path}
+                element={element}
+              />
+            ))}
+
+            {/* 404 handling within protected routes */}
+            <Route path="*" element={<NotFound />} />
           </Route>
+
+          {/* Catch-all redirect for non-matching public routes */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -1,7 +1,5 @@
-// src/services/authService.ts
 import api from './api';
 
-// The shape of the JSON you get back from /login and /check-token
 export interface AuthResponse {
   token: string;
   _id: string;
