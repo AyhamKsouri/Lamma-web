@@ -10,7 +10,7 @@ export interface EventData {
   endTime: string;
   location: string;
   bannerUrl: string;
-  visibility: 'public' | 'private';  // Added visibility here
+  visibility: 'public' | 'private';
   category:
     | 'clubbing'
     | 'rave'
@@ -21,6 +21,29 @@ export interface EventData {
     | 'meeting'
     | 'conference'
     | 'other';
+}
+
+export interface PaginationData {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  hasNextPage: boolean;
+  limit: number;
+}
+
+export interface PaginatedResponse {
+  events: RawEvent[];
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalCount: number;
+  hasNextPage: boolean;
+}
+
+export interface EventFilters {
+  category?: string;
+  searchTerm?: string;
+  visibility?: 'public' | 'private';
 }
 
 interface RawEvent {
@@ -38,14 +61,6 @@ interface RawEvent {
   price: number;
 }
 
-interface PaginatedResponse {
-  page: number;
-  limit: number;
-  totalPages: number | null;
-  hasNextPage: boolean;
-  events: RawEvent[];
-}
-
 export interface CreateEventData {
   title: string;
   description: string;
@@ -60,16 +75,32 @@ export interface CreateEventData {
   photos?: File[];
 }
 
-export async function getEvents(): Promise<EventData[]> {
+export async function getEvents(
+  page: number = 1,
+  limit: number = 10,
+  filters: EventFilters = {}
+): Promise<{ events: EventData[]; pagination: PaginationData }> {
   try {
-    const resp = await api.get<PaginatedResponse>('/api/event');
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(filters.category && filters.category !== 'all' && { type: filters.category }),
+      ...(filters.searchTerm && { search: filters.searchTerm })
+    });
+
+    console.log('Request URL:', `/api/event?${params}`);
+    console.log('Request params:', Object.fromEntries(params));
+
+    const resp = await api.get<PaginatedResponse>(`/api/event?${params}`);
     
+    console.log('Raw API response:', resp.data);
+
     if (!resp.data || !Array.isArray(resp.data.events)) {
       console.error('Unexpected response structure:', resp.data);
       throw new Error('Invalid response format from server');
     }
 
-    return resp.data.events.map((ev) => ({
+    const events = resp.data.events.map((ev) => ({
       id: ev._id,
       title: ev.title,
       startDate: ev.startDate,
@@ -79,8 +110,20 @@ export async function getEvents(): Promise<EventData[]> {
       location: ev.location,
       bannerUrl: ev.photos?.[0] || '',
       category: ev.type as EventData['category'],
-      visibility: ev.visibility,  // Added visibility here
+      visibility: ev.visibility,
     }));
+
+    const pagination: PaginationData = {
+      currentPage: Number(resp.data.page) || page,
+      totalPages: Math.max(1, Number(resp.data.totalPages) || Math.ceil(events.length / limit)),
+      totalCount: Number(resp.data.totalCount) || events.length,
+      hasNextPage: Boolean(resp.data.hasNextPage),
+      limit: Number(resp.data.limit) || limit
+    };
+
+    console.log('Processed response:', { events, pagination });
+
+    return { events, pagination };
   } catch (error: unknown) {
     console.error('Events API Error:', error);
     
@@ -96,28 +139,14 @@ export async function getEvents(): Promise<EventData[]> {
 
 export async function createEvent(eventData: CreateEventData): Promise<EventData> {
   try {
-    // Log the incoming data
-    console.log('Creating event with data:', eventData);
-
     const formData = new FormData();
-    formData.append('title', eventData.title);
-    formData.append('description', eventData.description);
-    formData.append('startDate', eventData.startDate);
-    formData.append('endDate', eventData.endDate);
-    formData.append('startTime', eventData.startTime);
-    formData.append('endTime', eventData.endTime);
-    formData.append('location', eventData.location);
-    formData.append('type', eventData.type);
-    formData.append('visibility', eventData.visibility);
-    formData.append('price', eventData.price.toString());
+    Object.entries(eventData).forEach(([key, value]) => {
+      if (key !== 'photos') {
+        formData.append(key, String(value));
+      }
+    });
 
-    // Log FormData entries
-    console.log('FormData entries:');
-    for (const pair of formData.entries()) {
-      console.log(`${pair[0]}: ${pair[1]}`);
-    }
-
-    if (eventData.photos && eventData.photos.length > 0) {
+    if (eventData.photos?.length) {
       eventData.photos.forEach(photo => {
         formData.append('photos', photo);
       });
@@ -129,10 +158,7 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
       },
     });
 
-    // Log the response
-    console.log('Server response:', resp.data);
-
-    if (!resp.data || !resp.data.data) {
+    if (!resp.data?.data) {
       throw new Error('Invalid response format from server');
     }
 
@@ -147,7 +173,7 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
       location: event.location,
       bannerUrl: event.photos?.[0] || '',
       category: event.type as EventData['category'],
-      visibility: event.visibility,  // Added visibility here
+      visibility: event.visibility,
     };
   } catch (error: unknown) {
     console.error('Create Event Error:', error);
@@ -156,7 +182,6 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
       if (error.response?.status === 401) {
         throw new AuthError('Session expired');
       }
-      console.error('Server Error Response:', error.response?.data);
       throw new Error(error.response?.data?.message || 'Failed to create event');
     }
     throw new Error('An unexpected error occurred');
