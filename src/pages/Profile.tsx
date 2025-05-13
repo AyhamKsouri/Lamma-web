@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const Profile: FC = () => {
+const editProfile: FC = () => {
   const [avatarPreview, setAvatarPreview] = useState<string>("/placeholder.svg");
   const [formData, setFormData] = useState({
     firstName: "Jane",
@@ -229,4 +229,4 @@ const Profile: FC = () => {
   );
 };
 
-export default Profile;
+export default editProfile;
