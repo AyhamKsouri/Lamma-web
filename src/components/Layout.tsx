@@ -1,27 +1,18 @@
+import React, { FC } from "react";
 import { Outlet } from "react-router-dom";
-import { FC } from "react";
 import Navbar from "./Navbar";
-import AppSidebar from "./Sidebar";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 const Layout: FC = () => {
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full">
-        {/* Sidebar always on the left */}
-        <AppSidebar />
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Navbar (top on desktop, bottom on mobile) */}
+      <Navbar />
 
-        {/* Right section: navbar + content */}
-        <div className="flex-1 flex flex-col">
-          {/* Fixed navbar */}
-          <Navbar />
-         
-            <SidebarInset className="p-6 w-full">
-              <Outlet />
-            </SidebarInset>
-        </div>
-      </div>
-    </SidebarProvider>
+      {/* Main content – padded so mobile nav doesn’t cover */}
+      <main className="flex-1 p-6 md:p-8 pb-20 md:pb-8">
+        <Outlet />
+      </main>
+    </div>
   );
 };
 
