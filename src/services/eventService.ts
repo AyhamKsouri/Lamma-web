@@ -1,4 +1,3 @@
-// src/services/eventService.ts
 import api, { AuthError } from './api';
 import { AxiosError } from 'axios';
 
@@ -12,6 +11,7 @@ export interface EventData {
   location: string;
   description?: string;
   bannerUrl?: string;
+  photos?: string[];
   visibility: 'public' | 'private';
   category:
     | 'clubbing'
@@ -79,6 +79,27 @@ export interface CreateEventData {
   photos?: File[];
 }
 
+const API_BASE_URL = "http://localhost:3000";
+
+// Validate date/time format
+const isValidDate = (date: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(date);
+const isValidTime = (time: string): boolean => /^\d{2}:\d{2}(:\d{2})?$/.test(time);
+
+function processPhotoUrl(url?: string): string {
+  if (!url) return "/fallback-image.png";
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    console.log('Photo URL (full):', url);
+    return url;
+  }
+  // Normalize path, handle filenames or relative paths
+  const normalizedUrl = url.startsWith('/uploads/eventMedia/') 
+    ? url 
+    : `/uploads/eventMedia/${url.replace(/^\/+/, '')}`;
+  const finalUrl = `${API_BASE_URL}${normalizedUrl}`;
+  console.log('Processed photo URL:', { input: url, output: finalUrl });
+  return finalUrl;
+}
+
 export async function getEvents(
   page: number = 1,
   limit: number = 10,
@@ -101,13 +122,14 @@ export async function getEvents(
     const events: EventData[] = resp.data.events.map(ev => ({
       id: ev._id,
       title: ev.title,
-      startDate: ev.startDate,
-      endDate: ev.endDate,
-      startTime: ev.startTime,
-      endTime: ev.endTime,
+      startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01', // Fallback
+      endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
+      startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
+      endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
       location: ev.location,
       description: ev.description,
-      bannerUrl: ev.photos?.[0] || '',
+      bannerUrl: ev.photos && ev.photos.length > 0 ? processPhotoUrl(ev.photos[0]) : '',
+      photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
       category: ev.type as EventData['category'],
       visibility: ev.visibility,
     }));
@@ -155,12 +177,14 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
     return {
       id: ev._id,
       title: ev.title,
-      startDate: ev.startDate,
-      endDate: ev.endDate,
-      startTime: ev.startTime,
-      endTime: ev.endTime,
+      startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01',
+      endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
+      startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
+      endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
       location: ev.location,
-      bannerUrl: ev.photos?.[0] || '',
+      description: ev.description || '',
+      bannerUrl: ev.photos && ev.photos.length > 0 ? processPhotoUrl(ev.photos[0]) : '',
+      photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
       category: ev.type as EventData['category'],
       visibility: ev.visibility,
     };
@@ -170,6 +194,50 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
         throw new AuthError('Session expired');
       }
       throw new Error(error.response.data?.message || 'Failed to create event');
+    }
+    throw error instanceof Error ? error : new Error('An unexpected error occurred');
+  } 
+}
+
+export async function getMyEvents(): Promise<EventData[]> {
+  try {
+    const response = await api.get<RawEvent[]>('/api/event/user/me');
+    console.log('Raw API response:', response.data);
+    
+    if (!Array.isArray(response.data)) {
+      console.error('Unexpected API response:', response);
+      throw new Error('Invalid response format from server');
+    }
+
+    return response.data.map(ev => {
+      console.log('Event data:', {
+        id: ev._id,
+        startDate: ev.startDate,
+        startTime: ev.startTime,
+        photos: ev.photos,
+      });
+      return {
+        id: ev._id,
+        title: ev.title,
+        startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01',
+        endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
+        startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
+        endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
+        location: ev.location,
+        description: ev.description || '',
+        bannerUrl: ev.photos && ev.photos.length > 0 ? processPhotoUrl(ev.photos[0]) : '',
+        photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
+        category: ev.type as EventData['category'],
+        visibility: ev.visibility,
+      };
+    });
+  } catch (error) {
+    console.error('Error in getMyEvents:', error);
+    if (error instanceof AxiosError && error.response) {
+      if (error.response.status === 401) {
+        throw new AuthError('Session expired');
+      }
+      throw new Error(error.response.data?.message || 'Failed to load your events');
     }
     throw error instanceof Error ? error : new Error('An unexpected error occurred');
   }
