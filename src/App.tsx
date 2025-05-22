@@ -3,35 +3,23 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Events from './pages/Events';
-import CalendarPage from './pages/Calendar';
-import EditProfile from './pages/editProfile';   // <-- PascalCase
-import NewEvent from './pages/NewEvent';
-import EventDetails from './pages/EventDetails';
-import Profile from './pages/Profile';
-import LoginPage from './pages/loginPage';
-import NotFound from './pages/NotFound';
-
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
-// Define route configuration for better maintenance
-interface RouteConfig {
-  path: string;
-  element: React.ReactNode;
-}
-
-const protectedRoutes: RouteConfig[] = [
-  { path: '/',           element: <Dashboard /> },
-  { path: 'events',      element: <Events /> },
-  { path: 'new-event',   element: <NewEvent /> },
-  { path: 'events/:id',  element: <EventDetails /> },
-  { path: 'calendar',    element: <CalendarPage /> },
-  { path: 'profile',     element: <Profile /> },
-  { path: 'edit-profile',element: <EditProfile /> }, // <-- use PascalCase and kebab-path if you like
-];
+import Layout from './components/user/Layout';
+import Dashboard from './pages/user/Dashboard';
+import Events from './pages/user/Events';
+import CalendarPage from './pages/user/Calendar';
+import NewEvent from './pages/user/NewEvent';
+import EventDetails from './pages/user/EventDetails';
+import Profile from './pages/user/Profile';
+import EditProfile from './pages/user/editProfile';
+import AdminPage from './pages/admin/AdminPage';
+import UsersAdminPage from './pages/admin/UsersAdminPage';
+import LoginPage from './pages/auth/loginPage';
+import NotFound from './pages/user/NotFound';
+import UserDetailAdminPage from './pages/admin/UserDetailAdminPage';
+import EventsAdminPage from './pages/admin/EventsAdminPage';
 
 function App() {
   return (
@@ -41,7 +29,7 @@ function App() {
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected wrapper */}
+          {/* Protected area */}
           <Route
             path="/"
             element={
@@ -50,20 +38,28 @@ function App() {
               </ProtectedRoute>
             }
           >
-            {/* Generate protected routes */}
-            {protectedRoutes.map(({ path, element }) => (
-              <Route
-                key={path}
-                path={path === '/' ? '' : path}
-                element={element} 
-              />
-            ))}
+            {/* Dashboard */}
+            <Route index element={<Dashboard />} />
+
+            {/* User routes */}
+            <Route path="events" element={<Events />} />
+            <Route path="new-event" element={<NewEvent />} />
+            <Route path="events/:id" element={<EventDetails />} />
+            <Route path="calendar" element={<CalendarPage />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="edit-profile" element={<EditProfile />} />
+
+            {/* Admin & Admin sub‐routes */}
+            <Route path="admin" element={<AdminPage />} />
+            <Route path="admin/users" element={<UsersAdminPage />} />
+            <Route path="admin/users/:id" element={<UserDetailAdminPage />} />
+            <Route path="/admin/events" element={<EventsAdminPage />} />
 
             {/* 404 inside protected area */}
             <Route path="*" element={<NotFound />} />
           </Route>
 
-          {/* Fallback for any other public route */}
+          {/* Fallback for any other public URL */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>

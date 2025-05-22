@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import LoadingOverlay from '@/components/LoadingOverlay'
+import LoadingOverlay from '@/components/common/LoadingOverlay'
 import {
   Card,
   CardContent,

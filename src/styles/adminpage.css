@@ -1,0 +1,167 @@
+/* Container & spacing */
+.admin-page {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+.admin-page__title {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* Each section */
+.admin-page__section {
+  margin-top: 2rem;
+}
+.admin-page__section-title {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* Analytics cards row */
+.admin-page__analytics-cards {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.analytics-card {
+  flex: 1;
+  min-width: 120px;
+  background: var(--card-bg);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.analytics-card:hover {
+  transform: translateY(-0.5rem); /* bump up by 0.5rem */
+  box-shadow: var(--card-hover-shadow);
+}
+
+.analytics-card__label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+}
+.analytics-card__value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+/* Deleted item card */
+.deleted-item {
+  width: 100%;           /* stretch full width */
+  max-width: none;       /* remove any implicit max */
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
+  padding: 1.5rem;       /* a bit more breathing room */
+  margin-bottom: 1.5rem; /* space between cards */
+  border: 1px solid var(--border);
+  transition: transform 200ms, border-color 200ms;
+  display: flex;
+  flex-direction: column;
+}
+.deleted-item-card__content {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+.deleted-item-card__banner {
+  width: 270px;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  flex-shrink: 0; /* don't let it shrink */
+}
+.deleted-item-card__info {
+  flex: 1;
+}
+.deleted-item-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.deleted-item-card__dates,
+.deleted-item-card__location,
+.deleted-item-card__description {
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+  margin-bottom: 0.25rem;
+}
+.deleted-item:hover {
+  transform: translateY(-4px);
+  border-color: #4B5563;
+}
+
+/* Action buttons */
+.deleted-item-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+}
+.btn-restore {
+ background-color: #10B981;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.restore-btn:hover { background-color: #059669; }
+.btn-delete {
+    background-color: #EF4444;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.delete-btn:hover { background-color: #DC2626; }
+/* Light/dark variables (if you use Tailwind's CSS variables) */
+:root {
+  --card-bg: white;
+  --border: #e5e7eb;
+  --muted-foreground: #6b7280;
+  --card-hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+
+}
+.dark {
+  --card-bg: #1f2937;
+  --border: #374151;
+  --muted-foreground: #9ca3af;
+  --card-hover-shadow: 0 8px 20px rgba(255, 255, 255, 0.1);
+
+}
+
+/* — your existing keyframes… */
+
+/* Slide-up keyframe */
+@keyframes slide-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Animation utility */
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out forwards;
+}
+
+/* Staggered delay utilities */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+/* add more if you have more cards… */

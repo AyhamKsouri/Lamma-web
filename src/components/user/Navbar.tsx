@@ -1,3 +1,5 @@
+// src/components/Navbar.tsx
+
 import React, { FC, useEffect, useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -5,6 +7,7 @@ import {
   Calendar,
   BarChart2,
   PlusCircle,
+  Shield,     // lucide-react Shield icon
   Sun,
   Moon,
 } from "lucide-react";
@@ -13,11 +16,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { fixProfileImagePath } from "@/lib/urlFix";
 
-const links = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/calendar", label: "Calendar", icon: Calendar },
-  { to: "/new-event", label: "New Event", icon: PlusCircle },
-  { to: "/events", label: "Events", icon: BarChart2 },
+const baseLinks = [
+  { to: "/",        label: "Home",     icon: Home },
+  { to: "/calendar",label: "Calendar", icon: Calendar },
+  { to: "/new-event",label: "New Event", icon: PlusCircle },
+  { to: "/events",  label: "Events",   icon: BarChart2 },
 ] as const;
 
 const Navbar: FC = () => {
@@ -25,12 +28,17 @@ const Navbar: FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
   const { user, signOut } = useAuth();
 
-  // Debug user in console
-  console.log("Navbar user:", user);
+  // Build links array, appending Admin if user.role === 'admin'
+  const links = [
+    ...baseLinks,
+    ...(user?.role === "admin"
+      ? [{ to: "/admin", label: "Admin", icon: Shield }]
+      : []),
+  ];
 
+  // Theme toggle & click‐outside handler
   useEffect(() => {
     const stored = localStorage.getItem("theme");
     if (
@@ -43,18 +51,13 @@ const Navbar: FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    document.documentElement.classList.toggle("dark", isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
   useEffect(() => {
-    const handler = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
     };
@@ -66,44 +69,32 @@ const Navbar: FC = () => {
     setMenuOpen(false);
     navigate("/profile");
   };
-
   const handleSignOut = () => {
     setMenuOpen(false);
     signOut();
     navigate("/login");
   };
-
   const getInitials = () => {
-    if (!user || !user.name) return "JD";
-    const names = user.name.trim().split(" ");
-    if (names.length === 1) {
-      return names[0].charAt(0).toUpperCase();
-    } else {
-      return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
-    }
+    if (!user?.name) return "JD";
+    const [first, second] = user.name.trim().split(" ");
+    return (first[0] + (second?.[0] || "")).toUpperCase();
   };
 
   return (
     <>
       {/* Desktop Top Nav */}
-      <nav
-        aria-label="Main navigation"
-        className="hidden md:flex items-center justify-between
-                   bg-white dark:bg-gray-800 shadow sticky top-0 z-20 h-14 px-6"
-      >
-        {/* Left: Nav links */}
+      <nav className="hidden md:flex items-center justify-between bg-white dark:bg-gray-800 shadow sticky top-0 z-20 h-14 px-6">
         <div className="flex items-center space-x-8">
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex items-center space-x-2 px-3 py-2 text-sm transition-colors
-                 ${
-                   isActive
-                     ? "text-cyan-500 font-semibold border-b-2 border-cyan-500"
-                     : "text-gray-700 dark:text-gray-300 hover:text-cyan-500"
-                 }`
+                `flex items-center space-x-2 px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? "text-cyan-500 font-semibold border-b-2 border-cyan-500"
+                    : "text-gray-700 dark:text-gray-300 hover:text-cyan-500"
+                }`
               }
             >
               <Icon className="w-5 h-5" />
@@ -112,7 +103,7 @@ const Navbar: FC = () => {
           ))}
         </div>
 
-        {/* Right: Dark toggle + Profile dropdown */}
+        {/* Dark toggle + Profile */}
         <div className="flex items-center space-x-4 relative" ref={menuRef}>
           <button
             onClick={() => setIsDark(!isDark)}
@@ -127,7 +118,7 @@ const Navbar: FC = () => {
           </button>
 
           <button
-            onClick={() => setMenuOpen((prev) => !prev)}
+            onClick={() => setMenuOpen((o) => !o)}
             aria-label="Open profile menu"
             className="flex items-center space-x-2 focus:outline-none"
           >
@@ -143,7 +134,6 @@ const Navbar: FC = () => {
             </span>
           </button>
 
-          {/* Animate the dropdown */}
           <AnimatePresence>
             {menuOpen && (
               <motion.div
@@ -163,7 +153,6 @@ const Navbar: FC = () => {
                     </p>
                   </div>
                 )}
-
                 <button
                   onClick={handleProfileClick}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -183,23 +172,18 @@ const Navbar: FC = () => {
       </nav>
 
       {/* Mobile Bottom Nav */}
-      <nav
-        aria-label="Mobile navigation"
-        className="fixed bottom-0 left-0 right-0 md:hidden
-                   bg-white dark:bg-gray-800 shadow-inner border-t z-20"
-      >
+      <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-white dark:bg-gray-800 shadow-inner border-t z-20">
         <ul className="flex justify-around">
           {links.map(({ to, label, icon: Icon }) => (
             <li key={to} className="flex-1">
               <NavLink
                 to={to}
                 className={({ isActive }) =>
-                  `w-full flex flex-col items-center py-2 text-xs transition-colors
-                   ${
-                     isActive
-                       ? "text-cyan-500"
-                       : "text-gray-500 dark:text-gray-400 hover:text-cyan-500"
-                   }`
+                  `w-full flex flex-col items-center py-2 text-xs transition-colors ${
+                    isActive
+                      ? "text-cyan-500"
+                      : "text-gray-500 dark:text-gray-400 hover:text-cyan-500"
+                  }`
                 }
               >
                 <Icon className="w-6 h-6 mb-1" />

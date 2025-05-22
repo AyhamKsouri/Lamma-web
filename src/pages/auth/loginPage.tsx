@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import LoginForm from '@/components/LoginForm';
-import SignupForm from '@/components/SignupForm';
-import EventInfoCard from '@/components/EventInfoCard';
-import AuthBackground from '@/components/AuthBackground';
-import DarkModeToggle from '@/components/DarkModeToggle';
-import '../styles/auth.css';
+import LoginForm from '@/components/common/LoginForm';
+import SignupForm from '@/components/common/SignupForm';
+import EventInfoCard from '@/components/user/EventInfoCard';
+import AuthBackground from '@/components/user/AuthBackground';
+import DarkModeToggle from '@/components/user/DarkModeToggle';
+import '@/styles/auth.css';
 
 const Auth: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);

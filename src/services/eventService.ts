@@ -1,3 +1,5 @@
+// src/services/eventService.ts
+
 import api, { AuthError } from './api';
 import { AxiosError } from 'axios';
 
@@ -88,16 +90,12 @@ const isValidTime = (time: string): boolean => /^\d{2}:\d{2}(:\d{2})?$/.test(tim
 function processPhotoUrl(url?: string): string {
   if (!url) return "/fallback-image.png";
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    console.log('Photo URL (full):', url);
     return url;
   }
-  // Normalize path, handle filenames or relative paths
   const normalizedUrl = url.startsWith('/uploads/eventMedia/') 
     ? url 
     : `/uploads/eventMedia/${url.replace(/^\/+/, '')}`;
-  const finalUrl = `${API_BASE_URL}${normalizedUrl}`;
-  console.log('Processed photo URL:', { input: url, output: finalUrl });
-  return finalUrl;
+  return `${API_BASE_URL}${normalizedUrl}`;
 }
 
 export async function getEvents(
@@ -122,7 +120,7 @@ export async function getEvents(
     const events: EventData[] = resp.data.events.map(ev => ({
       id: ev._id,
       title: ev.title,
-      startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01', // Fallback
+      startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01',
       endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
       startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
       endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
@@ -143,9 +141,7 @@ export async function getEvents(
     return { events, pagination };
   } catch (error: unknown) {
     if (error instanceof AxiosError && error.response) {
-      if (error.response.status === 401) {
-        throw new AuthError('Session expired');
-      }
+      if (error.response.status === 401) throw new AuthError('Session expired');
       throw new Error(error.response.data?.message || 'Failed to load events');
     }
     throw error instanceof Error ? error : new Error('An unexpected error occurred');
@@ -155,24 +151,16 @@ export async function getEvents(
 export async function createEvent(eventData: CreateEventData): Promise<EventData> {
   const formData = new FormData();
   Object.entries(eventData).forEach(([key, value]) => {
-    if (key !== 'photos') {
-      formData.append(key, String(value));
-    }
+    if (key !== 'photos') formData.append(key, String(value));
   });
-  if (eventData.photos?.length) {
-    eventData.photos.forEach(photo => {
-      formData.append('photos', photo);
-    });
-  }
+  eventData.photos?.forEach(photo => formData.append('photos', photo));
   try {
     const resp = await api.post<{ success: boolean; data: RawEvent }>(
       '/api/event',
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
-    if (!resp.data?.data) {
-      throw new Error('Invalid response format from server');
-    }
+    if (!resp.data?.data) throw new Error('Invalid response format from server');
     const ev = resp.data.data;
     return {
       id: ev._id,
@@ -190,54 +178,68 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
     };
   } catch (error: unknown) {
     if (error instanceof AxiosError && error.response) {
-      if (error.response.status === 401) {
-        throw new AuthError('Session expired');
-      }
+      if (error.response.status === 401) throw new AuthError('Session expired');
       throw new Error(error.response.data?.message || 'Failed to create event');
     }
     throw error instanceof Error ? error : new Error('An unexpected error occurred');
-  } 
+  }
 }
 
 export async function getMyEvents(): Promise<EventData[]> {
   try {
     const response = await api.get<RawEvent[]>('/api/event/user/me');
-    console.log('Raw API response:', response.data);
-    
     if (!Array.isArray(response.data)) {
-      console.error('Unexpected API response:', response);
       throw new Error('Invalid response format from server');
     }
-
-    return response.data.map(ev => {
-      console.log('Event data:', {
-        id: ev._id,
-        startDate: ev.startDate,
-        startTime: ev.startTime,
-        photos: ev.photos,
-      });
-      return {
-        id: ev._id,
-        title: ev.title,
-        startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01',
-        endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
-        startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
-        endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
-        location: ev.location,
-        description: ev.description || '',
-        bannerUrl: ev.photos && ev.photos.length > 0 ? processPhotoUrl(ev.photos[0]) : '',
-        photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
-        category: ev.type as EventData['category'],
-        visibility: ev.visibility,
-      };
-    });
+    return response.data.map(ev => ({
+      id: ev._id,
+      title: ev.title,
+      startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01',
+      endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
+      startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
+      endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
+      location: ev.location,
+      description: ev.description || '',
+      bannerUrl: ev.photos && ev.photos.length > 0 ? processPhotoUrl(ev.photos[0]) : '',
+      photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
+      category: ev.type as EventData['category'],
+      visibility: ev.visibility,
+    }));
   } catch (error) {
-    console.error('Error in getMyEvents:', error);
     if (error instanceof AxiosError && error.response) {
-      if (error.response.status === 401) {
-        throw new AuthError('Session expired');
-      }
+      if (error.response.status === 401) throw new AuthError('Session expired');
       throw new Error(error.response.data?.message || 'Failed to load your events');
+    }
+    throw error instanceof Error ? error : new Error('An unexpected error occurred');
+  }
+}
+
+/**
+ * Fetch a single event by its ID.
+ */
+export async function getEventById(id: string): Promise<EventData> {
+  if (!id) throw new Error('No event ID provided');
+  try {
+    const resp = await api.get<RawEvent>(`/api/event/${id}`);
+    const ev = resp.data;
+    return {
+      id: ev._id,
+      title: ev.title,
+      startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01',
+      endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
+      startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
+      endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
+      location: ev.location,
+      description: ev.description || '',
+      bannerUrl: ev.photos && ev.photos.length > 0 ? processPhotoUrl(ev.photos[0]) : '',
+      photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
+      category: ev.type as EventData['category'],
+      visibility: ev.visibility,
+    };
+  } catch (error: unknown) {
+    if (error instanceof AxiosError && error.response) {
+      if (error.response.status === 401) throw new AuthError('Session expired');
+      throw new Error(error.response.data?.message || 'Failed to load event details');
     }
     throw error instanceof Error ? error : new Error('An unexpected error occurred');
   }

@@ -1,7 +1,10 @@
+// src/pages/EventDetails.tsx
+
 import React, { FC, useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { getEventById, EventData } from '@/services/eventService';
 
-// Types
+// Types for guests/comments unchanged
 interface Guest {
   id: number;
   name: string;
@@ -14,78 +17,74 @@ interface Comment {
   message: string;
   date: string;
 }
-interface EventData {
-  id: number;
-  title: string;
-  date: string;
-  location: string;
-  description: string;
-  bannerUrl: string;
-  guests: Guest[];
-  comments: Comment[];
-  photos?: string[];
-}
-
-// Sample data
-const sampleEvents: EventData[] = [
-  {
-    id: 1,
-    title: 'Dance Night',
-    date: 'May 3, 2025 • 9:00 PM',
-    location: 'Club Groove, Downtown',
-    description:
-      'Join us for an electrifying night of dance and music featuring top DJs from around the world.',
-    bannerUrl: '/images/event1_banner.jpg',
-    photos: ['/images/event1_1.jpg', '/images/event1_2.jpg', '/images/event1_3.jpg'],
-    guests: [
-      { id: 1, name: 'Alice', rsvp: 'yes' },
-      { id: 2, name: 'Bob', rsvp: 'maybe' },
-      { id: 3, name: 'Carol', rsvp: 'yes' },
-      { id: 4, name: 'Dave', rsvp: 'no' },
-      { id: 5, name: 'Eve', rsvp: 'yes' },
-      { id: 6, name: 'Frank', rsvp: 'yes' }
-    ],
-    comments: [
-      { id: 1, author: 'Charlie', message: 'Can’t wait for this!', date: 'Apr 20, 2025' },
-      { id: 2, author: 'Dana', message: 'Is there a dress code?', date: 'Apr 21, 2025' }
-    ],
-  },
-];
 
 const EventDetails: FC = () => {
   const { id } = useParams<{ id: string }>();
-  const event = sampleEvents.find((e) => e.id === Number(id));
+  const [event, setEvent] = useState<EventData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
   const [rsvpState, setRsvpState] = useState<'yes'|'no'|'maybe' | null>(null);
   const [showRsvpMsg, setShowRsvpMsg] = useState('');
-  const [comments, setComments] = useState<Comment[]>(event?.comments || []);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [commentError, setCommentError] = useState('');
   const [copyError, setCopyError] = useState('');
   const commentEndRef = useRef<HTMLDivElement>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
 
+  // Fetch the event on mount / when `id` changes
+  useEffect(() => {
+    if (!id) {
+      setError('No event ID provided.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    getEventById(id)
+      .then(ev => {
+        setEvent(ev);
+        // initialize comments from ev.photos or empty
+        setComments(ev.photos ? [] : []);
+      })
+      .catch(err => {
+        console.error(err);
+        setError('Event not found.');
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
   // Scroll to latest comment
   useEffect(() => {
     commentEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
 
-  if (!event) {
+  if (loading) {
     return (
       <div className="p-6">
-        <p className="text-red-500">Event not found.</p>
-        <Link to="/" className="text-indigo-600 hover:underline focus:outline-none focus:ring">
+        <p>Loading event…</p>
+      </div>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <div className="p-6">
+        <p className="text-red-500">{error || 'Event not found.'}</p>
+        <Link to="/" className="text-indigo-600 hover:underline">
           ← Back to Home
         </Link>
       </div>
     );
   }
 
+  // Helper to format display date/time (you can adjust)
+  const displayDate = `${new Date(event.startDate).toLocaleDateString()} • ${event.startTime}`;
+
   const handleRsvp = (choice: 'yes'|'no'|'maybe') => {
     setRsvpState(choice);
     setShowRsvpMsg(`You responded '${choice}'`);
     setTimeout(() => setShowRsvpMsg(''), 3000);
   };
-
   const handleAddComment = () => {
     if (!commentText.trim()) {
       setCommentError('Comment cannot be empty');
@@ -95,19 +94,15 @@ const EventDetails: FC = () => {
       id: Date.now(),
       author: 'You',
       message: commentText.trim(),
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      date: new Date().toLocaleDateString(),
     };
     setComments([newComment, ...comments]);
     setCommentText('');
     setCommentError('');
   };
-
-  // ICS generation
   const generateICS = () => {
-    /* ...same as before... */
+    /* …your existing ICS code… */
   };
-
-  // Share link
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -120,7 +115,7 @@ const EventDetails: FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto py-6 space-y-6 animate-fade-in">
-      <Link to="/" className="text-indigo-600 hover:underline focus:outline-none focus:ring">
+      <Link to="/" className="text-indigo-600 hover:underline">
         ← Back to Home
       </Link>
 
@@ -137,17 +132,17 @@ const EventDetails: FC = () => {
       {/* Title & Info */}
       <div className="space-y-1">
         <h1 className="text-3xl font-bold">{event.title}</h1>
-        <p className="text-gray-600 dark:text-gray-400">{event.date}</p>
-        <p className="text-gray-600 dark:text-gray-400 truncate">{event.location}</p>
+        <p className="text-gray-600">{displayDate}</p>
+        <p className="text-gray-600 truncate">{event.location}</p>
       </div>
 
       {/* Photo Gallery */}
-      {event.photos && (
+      {event.photos && event.photos.length > 0 && (
         <div className="relative">
           <button
             onClick={() => galleryRef.current?.scrollBy({ left: -300, behavior: 'smooth' })}
             aria-label="Previous photos"
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow focus:outline-none focus:ring"
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow"
           >◀</button>
           <div
             ref={galleryRef}
@@ -166,7 +161,7 @@ const EventDetails: FC = () => {
           <button
             onClick={() => galleryRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
             aria-label="Next photos"
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow focus:outline-none focus:ring"
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow"
           >▶</button>
         </div>
       )}
@@ -179,35 +174,37 @@ const EventDetails: FC = () => {
             onClick={() => handleRsvp(choice)}
             aria-pressed={rsvpState === choice}
             className={`px-4 py-2 rounded focus:outline-none focus:ring
-              ${rsvpState === choice ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}
+              ${rsvpState === choice ? 'bg-indigo-600 text-white' : 'bg-gray-200'}
             `}
-          >{choice.charAt(0).toUpperCase()+choice.slice(1)}</button>
+          >
+            {choice.charAt(0).toUpperCase() + choice.slice(1)}
+          </button>
         ))}
-        {showRsvpMsg && (
-          <span className="text-green-600 animate-fade-in">{showRsvpMsg}</span>
-        )}
+        {showRsvpMsg && <span className="text-green-600">{showRsvpMsg}</span>}
       </div>
 
-      {/* Guest Avatars */}
+      {/* Guests */}
       <div>
-        <h2 className="text-xl font-semibold mb-2">Guests ({event.guests.length})</h2>
+        <h2 className="text-xl font-semibold mb-2">Guests</h2>
         <div className="flex -space-x-2">
-          {event.guests.slice(0,5).map(g => (
+          {event.guests?.slice(0,5).map(g => (
             <div
               key={g.id}
               className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center border-2 border-white"
               title={`${g.name} • RSVP: ${g.rsvp}`}
-            >{g.name.charAt(0)}</div>
+            >
+              {g.name.charAt(0)}
+            </div>
           ))}
-          {event.guests.length > 5 && (
-            <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm border-2 border-white">
+          {event.guests && event.guests.length > 5 && (
+            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm border-2 border-white">
               +{event.guests.length - 5}
             </div>
           )}
         </div>
       </div>
 
-      {/* Map Embed */}
+      {/* Map */}
       <div className="w-full h-64 rounded-lg overflow-hidden">
         <iframe
           title="Event Location"
@@ -223,46 +220,52 @@ const EventDetails: FC = () => {
         <ul className="space-y-2 max-h-60 overflow-y-auto" role="log" aria-live="polite">
           {comments.map(c => (
             <li key={c.id} className="border-b pb-2 last:pb-0">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{c.author} • {c.date}</p>
+              <p className="text-sm text-gray-500">{c.author} • {c.date}</p>
               <p>{c.message}</p>
             </li>
           ))}
           <div ref={commentEndRef} />
         </ul>
-        {commentError && <p className="text-red-500 text-sm animate-fade-in">{commentError}</p>}
+        {commentError && <p className="text-red-500 text-sm">{commentError}</p>}
         <div className="flex space-x-2">
           <input
             type="text"
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
             placeholder="Add a comment…"
-            className="form-input flex-1 focus:outline-none focus:ring"
-            aria-label="New comment"
+            className="form-input flex-1"
           />
           <button
             onClick={handleAddComment}
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition focus:outline-none focus:ring"
-          >Submit</button>
+            className="px-4 py-2 bg-indigo-600 text-white rounded"
+          >
+            Submit
+          </button>
         </div>
       </div>
 
-      {/* Actions: Calendar & Share */}
+      {/* Actions */}
       <div className="flex flex-wrap gap-4">
         <button
           onClick={generateICS}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition focus:outline-none focus:ring"
-        >Add to Calendar</button>
+          className="px-4 py-2 bg-green-500 text-white rounded"
+        >
+          Add to Calendar
+        </button>
         <button
           onClick={copyLink}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition focus:outline-none focus:ring"
-        >Copy Link</button>
-        {copyError && <p className="text-red-500 text-sm animate-fade-in">{copyError}</p>}
+          className="px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Copy Link
+        </button>
+        {copyError && <p className="text-red-500 text-sm">{copyError}</p>}
         <a
           href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(event.title)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-4 py-2 bg-blue-400 text-white rounded hover:bg-blue-500 transition focus:outline-none focus:ring"
-        >Share on Twitter</a>
+          target="_blank" rel="noopener noreferrer"
+          className="px-4 py-2 bg-blue-400 text-white rounded"
+        >
+          Share on Twitter
+        </a>
       </div>
     </div>
   );

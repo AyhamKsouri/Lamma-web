@@ -7,7 +7,7 @@ import {
   Lock,
   Facebook as FacebookIcon,
 } from 'lucide-react';
-import LoadingOverlay from '@/components/LoadingOverlay';
+import LoadingOverlay from '@/components/common/LoadingOverlay';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';

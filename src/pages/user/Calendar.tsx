@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/tooltip';
 import { getEvents, EventData, PaginationData, EventFilters } from '@/services/eventService';
 import { useToast } from '@/components/ui/use-toast';
-import '../styles/calendar.css';
+import '@/styles/calendar.css';
 
 const DEFAULT_EVENT_BANNER = '/default-event-banner.jpg';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

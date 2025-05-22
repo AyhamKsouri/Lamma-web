@@ -232,7 +232,7 @@ export default function ProfilePage() {
                       <div className="px-4 py-2 bg-cyan-500 flex justify-between items-center text-white text-sm">
                         <span className="capitalize truncate">{event.category}</span>
                         <Link 
-                          to={`/event/${event.id}`}
+                          to={`/events/${event.id}`}
                           className="text-white hover:text-cyan-100 text-xs font-medium"
                         >
                           View Details →
