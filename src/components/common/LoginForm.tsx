@@ -16,9 +16,10 @@ import { AuthContext } from '@/context/AuthContext';
 
 interface LoginFormProps {
   onToggleForm: () => void;
+  onForgotPassword?: () => void;
 }
 
-export default function LoginForm({ onToggleForm }: LoginFormProps) {
+export default function LoginForm({ onToggleForm, onForgotPassword}: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +35,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
     try {
       await signIn(email, password);
       console.log('✅ Logged in and user context set.');
-      
+
       setTimeout(() => {
         navigate('/');
       }, 1500); // smooth delay for loading effect
@@ -110,9 +111,14 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
                 <input type="checkbox" className="w-4 h-4 text-purple-600 border-gray-300 rounded" />
                 <span>Remember me</span>
               </label>
-              <button type="button" className="text-purple-600 hover:underline bg-transparent p-0 focus:outline-none">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-purple-600 hover:underline bg-transparent p-0 focus:outline-none"
+              >
                 Forgot password?
               </button>
+
             </div>
 
             <button

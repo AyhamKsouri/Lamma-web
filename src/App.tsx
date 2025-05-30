@@ -20,6 +20,8 @@ import LoginPage from './pages/auth/loginPage';
 import NotFound from './pages/user/NotFound';
 import UserDetailAdminPage from './pages/admin/UserDetailAdminPage';
 import EventsAdminPage from './pages/admin/EventsAdminPage';
+import VerifyResetCodePage from './components/common/VerifyResetCodePage';
+import ResetPasswordPage from './components/common/ResetPasswordPage';
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
         <Routes>
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/verify-reset-code" element={<VerifyResetCodePage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected area */}
           <Route
@@ -49,7 +53,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="edit-profile" element={<EditProfile />} />
 
-            {/* Admin & Admin sub‐routes */}
+            {/* Admin routes */}
             <Route path="admin" element={<AdminPage />} />
             <Route path="admin/users" element={<UsersAdminPage />} />
             <Route path="admin/users/:id" element={<UserDetailAdminPage />} />
@@ -59,12 +63,13 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Route>
 
-          {/* Fallback for any other public URL */}
+          {/* Fallback for unmatched public URLs */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
   );
 }
+
 
 export default App;
