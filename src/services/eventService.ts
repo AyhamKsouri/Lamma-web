@@ -81,19 +81,19 @@ export interface CreateEventData {
   photos?: File[];
 }
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = 'http://localhost:3000';
 
-// Validate date/time format
-const isValidDate = (date: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(date);
+const isValidDate = (date: string): boolean =>
+  !isNaN(Date.parse(date)); // ✅ replace the old regex
 const isValidTime = (time: string): boolean => /^\d{2}:\d{2}(:\d{2})?$/.test(time);
 
 function processPhotoUrl(url?: string): string {
-  if (!url) return "/fallback-image.png";
+  if (!url) return '/fallback-image.png';
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  const normalizedUrl = url.startsWith('/uploads/eventMedia/') 
-    ? url 
+  const normalizedUrl = url.startsWith('/uploads/eventMedia/')
+    ? url
     : `/uploads/eventMedia/${url.replace(/^\/+/, '')}`;
   return `${API_BASE_URL}${normalizedUrl}`;
 }
@@ -103,20 +103,28 @@ export async function getEvents(
   limit: number = 10,
   filters: EventFilters = {}
 ): Promise<{ events: EventData[]; pagination: PaginationData }> {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-    ...(filters.category && filters.category !== 'all' && { type: filters.category }),
-    ...(filters.searchTerm && { search: filters.searchTerm }),
-    ...(filters.startDate && { startDate: filters.startDate }),
-    ...(filters.endDate && { endDate: filters.endDate }),
-    ...(filters.visibility && { visibility: filters.visibility }),
-  });
+  const params: any = {
+    page,
+    limit,
+  };
+
+if (filters.startDate) params.startDate = filters.startDate;
+if (filters.endDate) params.endDate = filters.endDate;
+if (filters.searchTerm) params.searchTerm = filters.searchTerm;
+if (filters.visibility) params.visibility = filters.visibility;
+if (filters.category && filters.category.toLowerCase() !== 'all') {
+  params.type = filters.category.toLowerCase(); // Backend expects `type`
+}
+
+
+
+
   try {
-    const resp = await api.get<PaginatedResponse>(`/api/event?${params}`);
+    const resp = await api.get<PaginatedResponse>('/api/event', { params });
     if (!resp.data || !Array.isArray(resp.data.events)) {
       throw new Error('Invalid response format from server');
     }
+
     const events: EventData[] = resp.data.events.map(ev => ({
       id: ev._id,
       title: ev.title,
@@ -131,6 +139,7 @@ export async function getEvents(
       category: ev.type as EventData['category'],
       visibility: ev.visibility,
     }));
+
     const pagination: PaginationData = {
       currentPage: Number(resp.data.page) || page,
       totalPages: Math.max(1, Number(resp.data.totalPages) || Math.ceil(events.length / limit)),
@@ -138,6 +147,7 @@ export async function getEvents(
       hasNextPage: Boolean(resp.data.hasNextPage),
       limit: Number(resp.data.limit) || limit,
     };
+
     return { events, pagination };
   } catch (error: unknown) {
     if (error instanceof AxiosError && error.response) {
@@ -154,14 +164,17 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
     if (key !== 'photos') formData.append(key, String(value));
   });
   eventData.photos?.forEach(photo => formData.append('photos', photo));
+
   try {
     const resp = await api.post<{ success: boolean; data: RawEvent }>(
       '/api/event',
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
+
     if (!resp.data?.data) throw new Error('Invalid response format from server');
     const ev = resp.data.data;
+
     return {
       id: ev._id,
       title: ev.title,
@@ -191,6 +204,7 @@ export async function getMyEvents(): Promise<EventData[]> {
     if (!Array.isArray(response.data)) {
       throw new Error('Invalid response format from server');
     }
+
     return response.data.map(ev => ({
       id: ev._id,
       title: ev.title,
@@ -214,14 +228,13 @@ export async function getMyEvents(): Promise<EventData[]> {
   }
 }
 
-/**
- * Fetch a single event by its ID.
- */
 export async function getEventById(id: string): Promise<EventData> {
   if (!id) throw new Error('No event ID provided');
+
   try {
     const resp = await api.get<RawEvent>(`/api/event/${id}`);
     const ev = resp.data;
+
     return {
       id: ev._id,
       title: ev.title,
@@ -243,4 +256,40 @@ export async function getEventById(id: string): Promise<EventData> {
     }
     throw error instanceof Error ? error : new Error('An unexpected error occurred');
   }
+}
+
+export async function getEventsForMonth(
+  monthDate: Date,
+  page = 1,
+  limit = 100
+): Promise<{ events: EventData[]; pagination: PaginationData }> {
+  const startDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
+    .toISOString().split('T')[0];
+  const endDate = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0)
+    .toISOString().split('T')[0];
+
+  return await getEvents(page, limit, { startDate, endDate });
+}
+
+export function groupEventsByDate(events: EventData[]): Record<string, EventData[]> {
+  const map: Record<string, EventData[]> = {};
+  events.forEach(event => {
+    const start = new Date(event.startDate);
+    const end = new Date(event.endDate);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const key = d.toISOString().split('T')[0];
+      if (!map[key]) map[key] = [];
+      map[key].push(event);
+    }
+  });
+  return map;
+}
+
+export async function getEventsWithRange(
+  startDate: string,
+  endDate: string,
+  page = 1,
+  limit = 100
+): Promise<{ events: EventData[]; pagination: PaginationData }> {
+  return getEvents(page, limit, { startDate, endDate });
 }

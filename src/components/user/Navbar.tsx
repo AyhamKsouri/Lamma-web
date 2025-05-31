@@ -1,5 +1,3 @@
-// src/components/Navbar.tsx
-
 import React, { FC, useEffect, useState, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -7,7 +5,7 @@ import {
   Calendar,
   BarChart2,
   PlusCircle,
-  Shield,     // lucide-react Shield icon
+  Shield,
   Sun,
   Moon,
 } from "lucide-react";
@@ -15,12 +13,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { fixProfileImagePath } from "@/lib/urlFix";
+import NotificationBell from "@/components/user/NotificationBell";
 
 const baseLinks = [
-  { to: "/",        label: "Home",     icon: Home },
-  { to: "/calendar",label: "Calendar", icon: Calendar },
-  { to: "/new-event",label: "New Event", icon: PlusCircle },
-  { to: "/events",  label: "Events",   icon: BarChart2 },
+  { to: "/", label: "Home", icon: Home },
+  { to: "/calendar", label: "Calendar", icon: Calendar },
+  { to: "/new-event", label: "New Event", icon: PlusCircle },
+  { to: "/events", label: "Events", icon: BarChart2 },
 ] as const;
 
 const Navbar: FC = () => {
@@ -30,7 +29,6 @@ const Navbar: FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
-  // Build links array, appending Admin if user.role === 'admin'
   const links = [
     ...baseLinks,
     ...(user?.role === "admin"
@@ -38,7 +36,6 @@ const Navbar: FC = () => {
       : []),
   ];
 
-  // Theme toggle & click‐outside handler
   useEffect(() => {
     const stored = localStorage.getItem("theme");
     if (
@@ -69,11 +66,13 @@ const Navbar: FC = () => {
     setMenuOpen(false);
     navigate("/profile");
   };
+
   const handleSignOut = () => {
     setMenuOpen(false);
     signOut();
     navigate("/login");
   };
+
   const getInitials = () => {
     if (!user?.name) return "JD";
     const [first, second] = user.name.trim().split(" ");
@@ -82,7 +81,7 @@ const Navbar: FC = () => {
 
   return (
     <>
-      {/* Desktop Top Nav */}
+      {/* Desktop Navbar */}
       <nav className="hidden md:flex items-center justify-between bg-white dark:bg-gray-800 shadow sticky top-0 z-20 h-14 px-6">
         <div className="flex items-center space-x-8">
           {links.map(({ to, label, icon: Icon }) => (
@@ -103,19 +102,8 @@ const Navbar: FC = () => {
           ))}
         </div>
 
-        {/* Dark toggle + Profile */}
-        <div className="flex items-center space-x-4 relative" ref={menuRef}>
-          <button
-            onClick={() => setIsDark(!isDark)}
-            aria-label="Toggle dark mode"
-            className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-          >
-            {isDark ? (
-              <Sun className="w-5 h-5 text-yellow-400" />
-            ) : (
-              <Moon className="w-5 h-5 text-gray-800" />
-            )}
-          </button>
+        <div className="relative flex items-center space-x-4" ref={menuRef}>
+          <NotificationBell />
 
           <button
             onClick={() => setMenuOpen((o) => !o)}
@@ -137,15 +125,18 @@ const Navbar: FC = () => {
           <AnimatePresence>
             {menuOpen && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="absolute right-0 top-12 mt-2 w-56 bg-white dark:bg-gray-700 shadow-lg rounded-md py-2 z-30"
+                initial={{ opacity: 0, y: -20, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                transition={{
+                  duration: 0.25,
+                  ease: [0.17, 0.67, 0.83, 0.67],
+                }}
+                className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/90 backdrop-blur-md shadow-2xl z-50 overflow-hidden"
               >
                 {user && (
-                  <div className="px-4 py-3 border-b dark:border-gray-600">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                  <div className="px-4 py-4 border-b dark:border-gray-700 bg-white/60 dark:bg-gray-800/70">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {user.name}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -153,25 +144,41 @@ const Navbar: FC = () => {
                     </p>
                   </div>
                 )}
-                <button
-                  onClick={handleProfileClick}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                >
-                  Profile
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                >
-                  Sign Out
-                </button>
+
+                <div className="flex flex-col">
+                  <button
+                    onClick={handleProfileClick}
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-purple-50 dark:hover:bg-purple-900/30 text-gray-800 dark:text-gray-200 transition"
+                  >
+                    👤 Profile
+                  </button>
+
+                  <button
+                    onClick={() => setIsDark((prev) => !prev)}
+                    className="w-full px-4 py-3 text-left text-sm flex items-center justify-between hover:bg-purple-50 dark:hover:bg-purple-900/30 text-gray-800 dark:text-gray-200 transition"
+                  >
+                    🌓 Theme
+                    {isDark ? (
+                      <Sun className="w-4 h-4 text-yellow-400" />
+                    ) : (
+                      <Moon className="w-4 h-4 text-gray-500" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition"
+                  >
+                    🚪 Sign Out
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </nav>
 
-      {/* Mobile Bottom Nav */}
+      {/* Mobile Bottom Navbar */}
       <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-white dark:bg-gray-800 shadow-inner border-t z-20">
         <ul className="flex justify-around">
           {links.map(({ to, label, icon: Icon }) => (

@@ -1,3 +1,5 @@
+// src/services/calendarService.ts
+
 import { EventData, PaginationData, EventFilters, getEvents } from './eventService';
 
 export class CalendarService {
@@ -13,7 +15,7 @@ export class CalendarService {
   }
 
   /**
-   * Fetch events for a specific month
+   * Fetch events for a specific month (1st to last day of month)
    */
   public async getMonthEvents(
     date: Date,
@@ -23,6 +25,7 @@ export class CalendarService {
     const startDate = new Date(date.getFullYear(), date.getMonth(), 1)
       .toISOString()
       .split('T')[0];
+
     const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0)
       .toISOString()
       .split('T')[0];
@@ -30,68 +33,55 @@ export class CalendarService {
     const filters: EventFilters = {
       startDate,
       endDate,
+      visibility: 'public',  // ✅ Make sure to match backend filters
     };
 
-    return getEvents(page, limit, filters);
+    return await getEvents(page, limit, filters);
   }
 
   /**
-   * Group events by date for calendar display
+   * Group events by each date they span across
    */
   public groupEventsByDate(events: EventData[]): Record<string, EventData[]> {
-    const eventMap: Record<string, EventData[]> = {};
-    
-    events.forEach(event => {
+    const map: Record<string, EventData[]> = {};
+
+    events.forEach((event) => {
       const start = new Date(event.startDate);
       const end = new Date(event.endDate);
-      
-      for (
-        let date = new Date(start);
-        date <= end;
-        date.setDate(date.getDate() + 1)
-      ) {
-        const dateKey = date.toISOString().split('T')[0];
-        if (!eventMap[dateKey]) {
-          eventMap[dateKey] = [];
-        }
-        eventMap[dateKey].push(event);
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const key = d.toISOString().split('T')[0];
+        if (!map[key]) map[key] = [];
+        map[key].push(event);
       }
     });
 
-    return eventMap;
+    return map;
   }
 
   /**
-   * Get events for a specific date
+   * Get all events for a specific date
    */
-  public getEventsForDate(
-    events: EventData[],
-    date: Date
-  ): EventData[] {
+  public getEventsForDate(events: EventData[], date: Date): EventData[] {
     const dateStr = date.toISOString().split('T')[0];
-    return events.filter(event => {
-      const startDate = event.startDate;
-      const endDate = event.endDate;
-      return dateStr >= startDate && dateStr <= endDate;
+    return events.filter((event) => {
+      return dateStr >= event.startDate && dateStr <= event.endDate;
     });
   }
 
   /**
-   * Check if a date has any events
+   * Return true if there are any events on a specific date
    */
-  public hasEvents(
-    events: EventData[],
-    date: Date
-  ): boolean {
+  public hasEvents(events: EventData[], date: Date): boolean {
     return this.getEventsForDate(events, date).length > 0;
   }
 
   /**
-   * Get upcoming events
+   * Return upcoming events only
    */
   public getUpcomingEvents(events: EventData[]): EventData[] {
     const now = new Date();
-    return events.filter(event => new Date(event.startDate) >= now);
+    return events.filter((event) => new Date(event.startDate) >= now);
   }
 }
 
