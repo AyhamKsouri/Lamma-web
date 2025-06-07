@@ -20,6 +20,7 @@ export interface EventRecord {
   location: string;
   description?: string;
   createdBy: string;
+  type?: string;
 }
 
 export interface MediaRecord {
@@ -35,9 +36,10 @@ export interface UserRecord {
   email: string;
   role: string;
   createdAt: string;
-  deleted?: boolean;
   profileImage?: string;
 }
+
+
 export interface AdminEventRecord {
   _id: string;
   title: string;

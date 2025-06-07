@@ -22,7 +22,7 @@ import UserDetailAdminPage from './pages/admin/UserDetailAdminPage';
 import EventsAdminPage from './pages/admin/EventsAdminPage';
 import VerifyResetCodePage from './components/common/VerifyResetCodePage';
 import ResetPasswordPage from './components/common/ResetPasswordPage';
-
+import UserProfile from './pages/user/UserProfile';
 function App() {
   return (
     <AuthProvider>
@@ -52,6 +52,8 @@ function App() {
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="profile" element={<Profile />} />
             <Route path="edit-profile" element={<EditProfile />} />
+            <Route path="/profile/:id" element={<UserProfile />} />
+
 
             {/* Admin routes */}
             <Route path="admin" element={<AdminPage />} />

@@ -16,15 +16,31 @@ export interface EventData {
   photos?: string[];
   visibility: 'public' | 'private';
   category:
-    | 'clubbing'
-    | 'rave'
-    | 'birthday'
-    | 'wedding'
-    | 'food'
-    | 'sport'
-    | 'meeting'
-    | 'conference'
-    | 'other';
+  | 'clubbing'
+  | 'rave'
+  | 'birthday'
+  | 'wedding'
+  | 'food'
+  | 'sport'
+  | 'meeting'
+  | 'conference'
+  | 'other';
+  createdBy?: {
+    _id: string;
+    email?: string;
+    userInfo?: {
+      name?: string;
+      profileImage?: string;
+    };
+  };
+
+  guests?: {
+    user: {
+      _id: string;
+      name: string;
+    };
+    rsvp: 'yes' | 'no' | 'maybe';
+  }[];
 }
 
 export interface PaginationData {
@@ -65,6 +81,22 @@ interface RawEvent {
   type: string;
   visibility: 'public' | 'private';
   price: number;
+  createdBy?: {
+    _id: string;
+    email?: string;
+    userInfo?: {
+      name?: string;
+      profileImage?: string;
+    };
+  };
+
+  guests?: {
+    user: {
+      _id: string;
+      name: string;
+    };
+    rsvp: 'yes' | 'no' | 'maybe';
+  }[];
 }
 
 export interface CreateEventData {
@@ -84,7 +116,7 @@ export interface CreateEventData {
 const API_BASE_URL = 'http://localhost:3000';
 
 const isValidDate = (date: string): boolean =>
-  !isNaN(Date.parse(date)); // ✅ replace the old regex
+  !isNaN(Date.parse(date));
 const isValidTime = (time: string): boolean => /^\d{2}:\d{2}(:\d{2})?$/.test(time);
 
 function processPhotoUrl(url?: string): string {
@@ -108,16 +140,13 @@ export async function getEvents(
     limit,
   };
 
-if (filters.startDate) params.startDate = filters.startDate;
-if (filters.endDate) params.endDate = filters.endDate;
-if (filters.searchTerm) params.searchTerm = filters.searchTerm;
-if (filters.visibility) params.visibility = filters.visibility;
-if (filters.category && filters.category.toLowerCase() !== 'all') {
-  params.type = filters.category.toLowerCase(); // Backend expects `type`
-}
-
-
-
+  if (filters.startDate) params.startDate = filters.startDate;
+  if (filters.endDate) params.endDate = filters.endDate;
+  if (filters.searchTerm) params.searchTerm = filters.searchTerm;
+  if (filters.visibility) params.visibility = filters.visibility;
+  if (filters.category && filters.category.toLowerCase() !== 'all') {
+    params.type = filters.category.toLowerCase();
+  }
 
   try {
     const resp = await api.get<PaginatedResponse>('/api/event', { params });
@@ -138,6 +167,20 @@ if (filters.category && filters.category.toLowerCase() !== 'all') {
       photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
       category: ev.type as EventData['category'],
       visibility: ev.visibility,
+      createdBy: ev.createdBy
+        ? {
+          _id: ev.createdBy._id,
+          email: ev.createdBy.email,
+          userInfo: ev.createdBy.userInfo
+            ? {
+              name: ev.createdBy.userInfo.name,
+              profileImage: ev.createdBy.userInfo.profileImage
+            }
+            : undefined
+        }
+        : undefined
+
+
     }));
 
     const pagination: PaginationData = {
@@ -188,6 +231,19 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
       photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
       category: ev.type as EventData['category'],
       visibility: ev.visibility,
+      createdBy: ev.createdBy
+        ? {
+          _id: ev.createdBy._id,
+          email: ev.createdBy.email,
+          userInfo: ev.createdBy.userInfo
+            ? {
+              name: ev.createdBy.userInfo.name,
+              profileImage: ev.createdBy.userInfo.profileImage
+            }
+            : undefined
+        }
+        : undefined
+
     };
   } catch (error: unknown) {
     if (error instanceof AxiosError && error.response) {
@@ -218,6 +274,11 @@ export async function getMyEvents(): Promise<EventData[]> {
       photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
       category: ev.type as EventData['category'],
       visibility: ev.visibility,
+      createdBy: ev.createdBy ? {
+        _id: ev.createdBy._id,
+        name: ev.createdBy.userInfo?.name,
+        email: ev.createdBy.email
+      } : undefined
     }));
   } catch (error) {
     if (error instanceof AxiosError && error.response) {
@@ -248,6 +309,19 @@ export async function getEventById(id: string): Promise<EventData> {
       photos: ev.photos?.map(photo => processPhotoUrl(photo)) || [],
       category: ev.type as EventData['category'],
       visibility: ev.visibility,
+      createdBy: ev.createdBy
+        ? {
+          _id: ev.createdBy._id,
+          email: ev.createdBy.email,
+          userInfo: ev.createdBy.userInfo
+            ? {
+              name: ev.createdBy.userInfo.name,
+              profileImage: ev.createdBy.userInfo.profileImage
+            }
+            : undefined
+        }
+        : undefined,
+      guests: ev.guests || []
     };
   } catch (error: unknown) {
     if (error instanceof AxiosError && error.response) {
@@ -257,6 +331,7 @@ export async function getEventById(id: string): Promise<EventData> {
     throw error instanceof Error ? error : new Error('An unexpected error occurred');
   }
 }
+
 
 export async function getEventsForMonth(
   monthDate: Date,

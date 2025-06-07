@@ -23,7 +23,7 @@ const EventDetails: FC = () => {
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
-  const [rsvpState, setRsvpState] = useState<'yes'|'no'|'maybe' | null>(null);
+  const [rsvpState, setRsvpState] = useState<'yes' | 'no' | 'maybe' | null>(null);
   const [showRsvpMsg, setShowRsvpMsg] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
@@ -80,7 +80,7 @@ const EventDetails: FC = () => {
   // Helper to format display date/time (you can adjust)
   const displayDate = `${new Date(event.startDate).toLocaleDateString()} • ${event.startTime}`;
 
-  const handleRsvp = (choice: 'yes'|'no'|'maybe') => {
+  const handleRsvp = (choice: 'yes' | 'no' | 'maybe') => {
     setRsvpState(choice);
     setShowRsvpMsg(`You responded '${choice}'`);
     setTimeout(() => setShowRsvpMsg(''), 3000);
@@ -134,7 +134,28 @@ const EventDetails: FC = () => {
         <h1 className="text-3xl font-bold">{event.title}</h1>
         <p className="text-gray-600">{displayDate}</p>
         <p className="text-gray-600 truncate">{event.location}</p>
+        {event.createdBy?.userInfo?.name && (
+          <div className="flex items-center gap-3 mt-2">
+            <img
+              src={
+                event.createdBy.userInfo.profileImage
+                  ? `${import.meta.env.VITE_API_URL}/uploads/profileImages/${event.createdBy.userInfo.profileImage}`
+                  : '/images/profile-pic.png'
+              }
+              alt="Host"
+              className="w-10 h-10 rounded-full object-cover border"
+            />
+            <Link to={`/profile/${event.createdBy._id}`}
+              className="text-indigo-500 hover:underline">
+              Hosted by: {event.createdBy.userInfo?.name || 'Unknown'}
+            </Link>
+
+          </div>
+        )}
+
+
       </div>
+
 
       {/* Photo Gallery */}
       {event.photos && event.photos.length > 0 && (
@@ -154,7 +175,7 @@ const EventDetails: FC = () => {
                 src={src}
                 className="w-64 h-40 object-cover rounded-lg snap-center"
                 loading="lazy"
-                alt={`Photo ${idx+1}`}
+                alt={`Photo ${idx + 1}`}
               />
             ))}
           </div>
@@ -168,7 +189,7 @@ const EventDetails: FC = () => {
 
       {/* RSVP */}
       <div className="flex items-center space-x-4">
-        {(['yes','maybe','no'] as const).map(choice => (
+        {(['yes', 'maybe', 'no'] as const).map(choice => (
           <button
             key={choice}
             onClick={() => handleRsvp(choice)}
@@ -187,13 +208,13 @@ const EventDetails: FC = () => {
       <div>
         <h2 className="text-xl font-semibold mb-2">Guests</h2>
         <div className="flex -space-x-2">
-          {event.guests?.slice(0,5).map(g => (
+          {event.guests?.slice(0, 5).map(g => (
             <div
-              key={g.id}
+              key={g.user._id}
               className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center border-2 border-white"
-              title={`${g.name} • RSVP: ${g.rsvp}`}
+              title={`${g.user.name} • RSVP: ${g.rsvp}`}
             >
-              {g.name.charAt(0)}
+              {g.user.name.charAt(0)}
             </div>
           ))}
           {event.guests && event.guests.length > 5 && (
@@ -203,6 +224,7 @@ const EventDetails: FC = () => {
           )}
         </div>
       </div>
+
 
       {/* Map */}
       <div className="w-full h-64 rounded-lg overflow-hidden">
