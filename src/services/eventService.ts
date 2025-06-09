@@ -135,10 +135,13 @@ export async function getEvents(
   limit: number = 10,
   filters: EventFilters = {}
 ): Promise<{ events: EventData[]; pagination: PaginationData }> {
+  
   const params: any = {
     page,
     limit,
   };
+  console.log("➡ [Frontend] Fetching events with params:", params);
+
 
   if (filters.startDate) params.startDate = filters.startDate;
   if (filters.endDate) params.endDate = filters.endDate;
