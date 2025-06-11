@@ -79,27 +79,32 @@ const Events: FC = () => {
   }, [navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
-  try {
-    const res = await api.get('/api/user-account/all', {
-      params: { search: debouncedSearchTerm }
-    });
-    setState(prev => ({ ...prev, userResults: res.data }));
-  } catch (err) {
-    console.error("Failed to fetch users", err);
-    setState(prev => ({ ...prev, userResults: [], error: 'Failed to load users' }));
-  }
-}, [debouncedSearchTerm]);
+    try {
+      const res = await api.get('/api/user-account/all', {
+        params: { search: debouncedSearchTerm }
+      });
+      setState(prev => ({ ...prev, userResults: res.data }));
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+      setState(prev => ({ ...prev, userResults: [], error: 'Failed to load users' }));
+    }
+  }, [debouncedSearchTerm]);
 
 
   const fetchEvents = useCallback(async () => {
     try {
-      const filters: EventFilters = {};
+      const filters: EventFilters = {
+        visibility: 'public', // 🔒 Force public visibility for all roles
+      };
+
       if (state.selectedCategory !== 'All' && state.selectedCategory !== 'Users') {
         filters.category = state.selectedCategory.toLowerCase();
       }
       if (debouncedSearchTerm) {
         filters.searchTerm = debouncedSearchTerm;
       }
+
+
 
       const response = await getEvents(state.currentPage, state.itemsPerPage, filters);
 
@@ -132,10 +137,10 @@ const Events: FC = () => {
   ]);
 
   useEffect(() => {
-  if (!user || isChecking) return;
-  if (state.selectedCategory === 'Users') fetchUsers();
-  else fetchEvents();
-}, [user, isChecking, fetchEvents, fetchUsers, state.selectedCategory, state.currentPage, debouncedSearchTerm]);
+    if (!user || isChecking) return;
+    if (state.selectedCategory === 'Users') fetchUsers();
+    else fetchEvents();
+  }, [user, isChecking, fetchEvents, fetchUsers, state.selectedCategory, state.currentPage, debouncedSearchTerm]);
 
 
   const handleCategoryChange = (cat: Category) => {

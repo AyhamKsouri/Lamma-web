@@ -46,15 +46,25 @@ export default function UserProfile() {
         api.get(`/api/user-account/${id}`),
         api.get(`/api/user-account/${id}/follow-stats`),
         api.get(`/api/event/user/${id}/public-events`),
-        api.get(`/api/event/user/${id}/liked`),
+        api.get(`/api/event/user/${id}/liked`, {
+          headers: { "Cache-Control": "no-cache" },
+          params: { t: Date.now() } // 👈 unique query each time to bust cache
+        }),
+
         api.get(`/api/event/user/${id}/attending`),
       ]);
+      console.log("✅ likedRes.data:", likedRes.data);
+
 
       setUser(userRes.data);
       setFollowers(statsRes.data.followersCount || 0);
       setFollowing(statsRes.data.followingCount || 0);
       setCreatedEvents(createdRes.data);
-      setLikedEvents(likedRes.data.filter((e) => e.visibility === "public"));
+      setLikedEvents(
+        Array.isArray(likedRes.data)
+          ? likedRes.data.filter(e => String(e.visibility).toLowerCase() === "public")
+          : []
+      );
       setAttendingEvents(attendingRes.data.filter((e) => e.visibility === "public"));
 
       const currentUserId = localStorage.getItem("userId");
