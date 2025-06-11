@@ -173,8 +173,7 @@ export default function UserDetailAdminPage() {
               <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={exportToCSV} variant="outline">Export CSV</Button>
-          <Button onClick={exportToPDF} variant="outline">Export PDF</Button>
+          
         </div>
 
         {loadingEvents ? (

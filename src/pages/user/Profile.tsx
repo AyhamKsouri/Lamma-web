@@ -5,7 +5,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Edit, Archive, Settings, Calendar as CalIcon, Users } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getMyEvents, EventData } from "@/services/eventService";
+import api from "@/services/api";
+import { MapPin } from "lucide-react";
+
+import {
+  getMyEvents,
+  getGoingEvents,
+  getInterestedEvents,
+  getLikedEvents,
+  EventData
+} from "@/services/eventService";
 import { AuthError } from "@/services/api";
 import { format, parseISO, isValid } from "date-fns";
 
@@ -15,70 +24,100 @@ export default function ProfilePage() {
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [followers, setFollowers] = useState(0);
+  const [following, setFollowing] = useState(0);
+
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get(`/api/user-account/${user?._id}/follow-stats`);
+        setFollowers(res.data.followersCount || 0);
+        setFollowing(res.data.followingCount || 0);
+      } catch (err) {
+        console.error("Failed to fetch follow stats:", err);
+      }
+    };
+
+    if (user?._id) {
+      fetchStats();
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+
         setIsLoading(true);
         setError(null);
-        const fetchedEvents = await getMyEvents();
-        console.log("Fetched events:", fetchedEvents);
+
+        let fetchedEvents: EventData[] = [];
+
+        switch (activeTab) {
+          case "My Events":
+            fetchedEvents = await getMyEvents();
+            break;
+          case "Interested":
+            fetchedEvents = await getInterestedEvents();
+            break;
+          case "Liked":
+            fetchedEvents = await getLikedEvents();
+            break;
+          case "Attending":
+            fetchedEvents = await getGoingEvents();
+            break;
+          case "Photos":
+            fetchedEvents = []; // Optional: implement later
+            break;
+          default:
+            fetchedEvents = [];
+        }
+
         setEvents(fetchedEvents);
       } catch (err) {
-        console.error('Error fetching events:', err);
+        console.error("Error fetching events:", err);
         if (err instanceof AuthError) {
-          setError('Please sign in again to view your events.');
+          setError("Please sign in again to view your events.");
         } else {
-          setError(err instanceof Error ? err.message : 'Failed to load events. Please try again later.');
+          setError(err instanceof Error ? err.message : "Failed to load events.");
         }
       } finally {
         setIsLoading(false);
       }
     };
 
+
     if (user) {
       fetchEvents();
     }
-  }, [user]);
+  }, [user, activeTab]);
 
-  const handleRetry = async () => {
-    try {
-      setIsLoading(true);
+  const handleRetry = () => {
+    if (user) {
+      // Will trigger fetchEvents via dependency on activeTab
       setError(null);
-      const fetchedEvents = await getMyEvents();
-      setEvents(fetchedEvents);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load events. Please try again later.');
-    } finally {
-      setIsLoading(false);
+      setIsLoading(true);
     }
   };
+
+
 
   const formatDateTime = (date: string | undefined, time: string | undefined) => {
     try {
-      if (!date || !time) {
-        throw new Error(`Invalid input: date=${date}, time=${time}`);
-      }
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dateRegex.test(date)) {
-        throw new Error(`Invalid date format: ${date}`);
-      }
-      let fullTime = time;
-      if (time.length === 5) {
-        fullTime = `${time}:00`;
-      } else if (!/^\d{2}:\d{2}(:\d{2})?$/.test(time)) {
-        throw new Error(`Invalid time format: ${time}`);
-      }
-      const dateTime = parseISO(`${date}T${fullTime}`);
-      if (!isValid(dateTime)) {
-        throw new Error(`Invalid date-time: ${date}T${fullTime}`);
-      }
+      if (!date) throw new Error('Missing date');
+
+      const dateTime = parseISO(date); // just use the full ISO string from backend
+      if (!isValid(dateTime)) throw new Error('Invalid parsed date');
+
       return format(dateTime, "MMM d, yyyy 'at' h:mm a");
     } catch (err) {
       console.error('Date formatting error:', err, { date, time });
-      return `${date || 'Unknown date'} ${time || 'Unknown time'}`;
+      return 'Date TBD';
     }
   };
+
+
+
 
   if (!user) {
     return (
@@ -91,7 +130,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row py-8 px-4 gap-8">
-        <aside className="w-full md:w-64 bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex flex-col">
+        <aside className="w-full md:w-64 bg-white dark:bg-gray-800 rounded-xl shadow p-4 flex flex-col justify-between max-h-[60vh]">
           <div className="flex flex-col items-center space-y-4">
             <Avatar className="w-24 h-24 border-2 border-gray-200 dark:border-gray-700">
               <AvatarImage src={user.profileImage} alt={user.name} />
@@ -114,7 +153,7 @@ export default function ProfilePage() {
             <Button
               asChild
               variant="outline"
-              className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full border-g  ray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <Link to="/archive">
                 <Archive className="w-5 h-5 mr-2" />
@@ -136,11 +175,11 @@ export default function ProfilePage() {
             </div>
             <div className="flex justify-between text-gray-700 dark:text-gray-300">
               <span>Followers</span>
-              <span>0</span>
+              <span>{followers}</span>
             </div>
             <div className="flex justify-between text-gray-700 dark:text-gray-300">
               <span>Following</span>
-              <span>0</span>
+              <span>{following} </span>
             </div>
           </div>
         </aside>
@@ -224,14 +263,15 @@ export default function ProfilePage() {
                             </span>
                           </div>
                           <div className="flex items-center">
-                            <Users className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                            <span className=" truncate">{event.location}</span>
+                            <MapPin className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                            <span className="truncate">{event.location}</span>
+
                           </div>
                         </div>
                       </div>
                       <div className="px-4 py-2 bg-cyan-500 flex justify-between items-center text-white text-sm">
                         <span className="capitalize truncate">{event.category}</span>
-                        <Link 
+                        <Link
                           to={`/events/${event.id}`}
                           className="text-white hover:text-cyan-100 text-xs font-medium"
                         >

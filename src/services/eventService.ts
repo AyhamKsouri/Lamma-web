@@ -124,18 +124,20 @@ function processPhotoUrl(url?: string): string {
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  const normalizedUrl = url.startsWith('/uploads/eventMedia/')
+  const normalizedUrl = url.startsWith('/uploads/eventPhotos/')
     ? url
-    : `/uploads/eventMedia/${url.replace(/^\/+/, '')}`;
+    : `/uploads/eventPhotos/${url.replace(/^\/+/, '')}`;
+
   return `${API_BASE_URL}${normalizedUrl}`;
 }
+
 
 export async function getEvents(
   page: number = 1,
   limit: number = 10,
   filters: EventFilters = {}
 ): Promise<{ events: EventData[]; pagination: PaginationData }> {
-  
+
   const params: any = {
     page,
     limit,
@@ -160,7 +162,7 @@ export async function getEvents(
     const events: EventData[] = resp.data.events.map(ev => ({
       id: ev._id,
       title: ev.title,
-      startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01',
+      startDate: isValidDate(ev.startDate) ? ev.startDate : '',
       endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
       startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
       endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
@@ -218,8 +220,10 @@ export async function createEvent(eventData: CreateEventData): Promise<EventData
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
 
-    if (!resp.data?.data) throw new Error('Invalid response format from server');
-    const ev = resp.data.data;
+    if (!resp.data || typeof resp.data !== 'object' || !resp.data.success || !resp.data.data) {
+      console.error('Unexpected response format:', resp.data);
+      throw new Error('Invalid response format from server');
+    } const ev = resp.data.data;
 
     return {
       id: ev._id,
@@ -370,4 +374,69 @@ export async function getEventsWithRange(
   limit = 100
 ): Promise<{ events: EventData[]; pagination: PaginationData }> {
   return getEvents(page, limit, { startDate, endDate });
+}
+// ✅ Reuse mapping logic
+function convertRawEventToEventData(ev: RawEvent): EventData {
+  return {
+    id: ev._id,
+    title: ev.title,
+    startDate: isValidDate(ev.startDate) ? ev.startDate : '1970-01-01',
+    endDate: isValidDate(ev.endDate) ? ev.endDate : '1970-01-01',
+    startTime: isValidTime(ev.startTime) ? ev.startTime : '00:00',
+    endTime: isValidTime(ev.endTime) ? ev.endTime : '00:00',
+    location: ev.location,
+    description: ev.description || '',
+    bannerUrl: ev.photos && ev.photos.length > 0 ? processPhotoUrl(ev.photos[0]) : '',
+    photos: ev.photos?.map(processPhotoUrl) || [],
+    category: ev.type as EventData['category'],
+    visibility: ev.visibility,
+    createdBy: ev.createdBy
+      ? {
+        _id: ev.createdBy._id,
+        email: ev.createdBy.email,
+        userInfo: ev.createdBy.userInfo
+          ? {
+            name: ev.createdBy.userInfo.name,
+            profileImage: ev.createdBy.userInfo.profileImage,
+          }
+          : undefined,
+      }
+      : undefined,
+    guests: ev.guests || [],
+  };
+}
+
+// ✅ Unified error handler
+function handleEventApiError(error: unknown, defaultMsg: string): Error {
+  if (error instanceof AxiosError && error.response) {
+    if (error.response.status === 401) throw new AuthError('Session expired');
+    throw new Error(error.response.data?.message || defaultMsg);
+  }
+  return error instanceof Error ? error : new Error(defaultMsg);
+}
+export async function getLikedEvents(): Promise<EventData[]> {
+  try {
+    const response = await api.get<RawEvent[]>('/api/event/liked');
+    return response.data.map(convertRawEventToEventData);
+  } catch (error) {
+    throw handleEventApiError(error, 'Failed to fetch liked events');
+  }
+}
+
+export async function getInterestedEvents(): Promise<EventData[]> {
+  try {
+    const response = await api.get<RawEvent[]>('/api/event/interested');
+    return response.data.map(convertRawEventToEventData);
+  } catch (error) {
+    throw handleEventApiError(error, 'Failed to fetch interested events');
+  }
+}
+
+export async function getGoingEvents(): Promise<EventData[]> {
+  try {
+    const response = await api.get<RawEvent[]>('/api/event/going');
+    return response.data.map(convertRawEventToEventData);
+  } catch (error) {
+    throw handleEventApiError(error, 'Failed to fetch attending events');
+  }
 }

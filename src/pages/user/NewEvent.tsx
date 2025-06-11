@@ -6,6 +6,8 @@ import { createEvent } from '@/services/eventService';
 import { useToast } from '@/components/ui/use-toast';
 import { AuthError } from '@/services/api';
 import '@/styles/newevent.css'
+import MapPicker from "@/components/MapPicker";
+
 
 const NewEvent: FC = () => {
   const navigate = useNavigate();
@@ -27,6 +29,17 @@ const NewEvent: FC = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locationCoords, setLocationCoords] = useState<{ lat: number, lng: number } | null>(null);
+  const [locationAddress, setLocationAddress] = useState("");
+
+  const handleLocationSelect = (
+    coords: { lat: number; lng: number },
+    address: string
+  ) => {
+
+    setLocationCoords(coords);
+    setLocationAddress(address);
+  };
 
   // Animation variants
   const fadeIn = {
@@ -55,7 +68,7 @@ const NewEvent: FC = () => {
   // Submit handler
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title || !startDate || !startTime || !endDate || !endTime || !location) {
+    if (!title || !startDate || !startTime || !endDate || !endTime || !locationAddress) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -76,7 +89,7 @@ const NewEvent: FC = () => {
         endDate,
         startTime,
         endTime,
-        location,
+        location: locationAddress,
         type,
         visibility,
         price,
@@ -90,22 +103,27 @@ const NewEvent: FC = () => {
         endDate,
         startTime,
         endTime,
-        location,
+        location: locationAddress || location,
         type: type as any,
         visibility,
         price,
         photos: image ? [image] : undefined,
       });
 
+
+
       toast({
-        title: "Success",
-        description: "Event created successfully!",
+        title: "🎉 Event Created",
+        description: "Your event has been published successfully.",
       });
 
-      navigate('/events');
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+
     } catch (error) {
       console.error('Submit Error:', error);
-      
+
       if (error instanceof AuthError) {
         toast({
           variant: "destructive",
@@ -335,18 +353,12 @@ const NewEvent: FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Location & Price
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <label className="form-label">Location<span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={location}
-                    onChange={e => setLocation(e.target.value)}
-                    placeholder="Enter venue name and address"
-                    required
-                  />
-                </div>
+              <div className="col-span-full w-full">
+                <MapPicker onLocationSelect={handleLocationSelect} />
+                <p className="text-sm mt-2 text-gray-400 dark:text-gray-500">
+                  {locationAddress || 'No location selected yet.'}
+                </p>
+
                 <div>
                   <label className="form-label">Price (TND)</label>
                   <div className="relative">

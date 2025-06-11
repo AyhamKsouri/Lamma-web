@@ -185,11 +185,12 @@ const Events: FC = () => {
               setState(prev => ({
                 ...prev,
                 searchTerm: e.target.value,
-                currentPage: 1, // Reset to page 1 on search
+                currentPage: 1, // reset on search
               }))
             }
-            className="w-full mt-4"
+            className="w-full mt-4 text-black bg-white dark:text-white dark:bg-gray-800"
           />
+
         </div>
       </div>
 

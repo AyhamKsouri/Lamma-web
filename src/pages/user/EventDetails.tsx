@@ -94,40 +94,36 @@ const EventDetails: FC = () => {
     commentEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [comments]);
 
-  const handleReservation = async (choice: "yes" | "no" | "maybe", numberOfPeople = 1) => {
+  const handleReservation = async (choice: "yes" | "maybe" | "no") => {
     if (!id) return;
-    const userId = localStorage.getItem("userId");
-    const userName = localStorage.getItem("userName") || "Anonymous";
-    if (!userId) {
-      setError("User not authenticated.");
-      return;
-    }
+
+    const statusMap = {
+      yes: "going",
+      maybe: "interested",
+      no: "notgoing",
+    };
 
     try {
-      const reservations = await api.get(`/api/reservation/${id}`);
-      const userReservation = reservations.data.find((r) => r.user.toString() === userId);
+      const res = await api.post(`/api/event/${id}/rsvp`, {
+        status: statusMap[choice],
+      });
 
-      if (choice === "no" && userReservation) {
-        await api.delete(`/api/reservation/${userReservation._id}`);
-        setReservationState(null);
-        setShowReservationMsg("Reservation canceled.");
-      } else if (choice === "yes" && (!userReservation || userReservation.status !== "confirmed")) {
-        await api.post(`/api/reservation/${id}`, { numberOfPeople, userName });
-        setReservationState("yes");
-        setShowReservationMsg(`Reservation made for ${numberOfPeople} people.`);
-      } else if (choice === "maybe" && (!userReservation || userReservation.status === "pending")) {
-        await api.post(`/api/reservation/${id}`, { numberOfPeople: 0, userName, status: "pending" });
-        setReservationState("maybe");
-        setShowReservationMsg("Reservation set as pending.");
-      }
+      setReservationState(choice);
+      setShowReservationMsg(`RSVP status updated to "${choice}"`);
       setTimeout(() => setShowReservationMsg(""), 3000);
+
+      // Optionally refresh guest list
+      setEvent((prev) =>
+        prev ? { ...prev, guests: res.data?.rsvps || prev.guests } : prev
+      );
     } catch (err) {
-      console.error("Failed to make reservation:", err);
-      setError("Failed to make reservation.");
+      console.error("Failed to update RSVP:", err);
+      setError("Failed to update RSVP status.");
     }
   };
 
-  const handleToggleLike = async () =>   {
+
+  const handleToggleLike = async () => {
     if (!id) return;
     try {
       const response = await api.post(`/api/event/${id}/like`);
@@ -306,43 +302,96 @@ const EventDetails: FC = () => {
       )}
 
       {/* Reservation (RSVP) */}
-      <div className="flex items-center space-x-4">
-        {(["yes", "maybe", "no"] as const).map((choice) => (
-          <Button
-            key={choice}
-            onClick={() => handleReservation(choice, choice === "yes" ? 1 : 0)} // 1 for "yes", 0 for others
-            variant={reservationState === choice ? "default" : "outline"}
-            className={`${reservationState === choice
-              ? "bg-indigo-600 text-white hover:bg-indigo-700"
-              : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              } px-3 sm:px-4 py-2 rounded-lg transition duration-200`}
-          >
-            {choice.charAt(0).toUpperCase() + choice.slice(1)}
-          </Button>
-        ))}
-        {showReservationMsg && <span className="text-green-600">{showReservationMsg}</span>}
-      </div>
+      <div className="space-y-3">
+        <div className="flex items-center space-x-4">
+          {(["yes", "maybe", "no"] as const).map((choice) => {
+            const emojiMap = {
+              yes: "✅",
+              maybe: "🤔",
+              no: "❌",
+            };
 
-      {/* Guests */}
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Guests</h2>
-        <div className="flex -space-x-2">
-          {event.guests?.slice(0, 5).map((g) => (
-            <div
-              key={g.user._id}
-              className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center border-2 border-white"
-              title={`${g.user.userInfo?.name || g.user.email} • RSVP: ${g.rsvp}`}
+            return (
+              <Button
+                key={choice}
+                onClick={() => handleReservation(choice)}
+                variant={reservationState === choice ? "default" : "outline"}
+                className={`${reservationState === choice
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  } px-3 sm:px-4 py-2 rounded-lg transition duration-200`}
+              >
+                {emojiMap[choice]} {choice.charAt(0).toUpperCase() + choice.slice(1)}
+              </Button>
+            );
+          })}
+
+          {/* ✅ Clear RSVP */}
+          {reservationState && (
+            <Button
+              variant="outline"
+              onClick={() => handleReservation("no")}
+              className="ml-2 bg-white border border-gray-300 text-gray-800 hover:bg-red-100"
             >
-              {(g.user.userInfo?.name || g.user.email).charAt(0)}
-            </div>
-          ))}
-          {event.guests && event.guests.length > 5 && (
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm border-2 border-white">
-              +{event.guests.length - 5}
-            </div>
+              Clear RSVP
+            </Button>
+          )}
+
+          {/* RSVP status message */}
+          {showReservationMsg && (
+            <span className="text-green-600 font-medium">{showReservationMsg}</span>
           )}
         </div>
       </div>
+
+      {/* Guests by RSVP status */}
+      <div className="space-y-4 mt-6">
+        <h2 className="text-xl font-semibold">Guests</h2>
+
+        {["yes", "maybe", "no"].map((status) => {
+          const guestsByStatus = event.guests?.filter((g) => g.rsvp === status) || [];
+
+          if (guestsByStatus.length === 0) return null;
+
+          const statusLabel = {
+            yes: "✅ Going",
+            maybe: "🤔 Maybe",
+            no: "❌ Not Going",
+          }[status as "yes" | "maybe" | "no"];
+
+          return (
+            <div key={status}>
+              <h3 className="text-md font-semibold text-gray-700">
+                {statusLabel} ({guestsByStatus.length})
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {guestsByStatus.map((g) => (
+                  <div
+                    key={g.user._id}
+                    className="flex items-center space-x-2 bg-white shadow-sm border px-3 py-1 rounded-md"
+                    title={`${g.user.userInfo?.name || g.user.email}`}
+                  >
+                    <img
+                      src={
+                        g.user.userInfo?.profileImage
+                          ? `${import.meta.env.VITE_API_URL}${g.user.userInfo.profileImage}`
+                          : "/images/profile-pic.png"
+                      }
+                      className="w-8 h-8 rounded-full object-cover"
+                      alt="user"
+                    />
+                    <span className="text-sm text-gray-800">
+                      {g.user.userInfo?.name || g.user.email}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+
 
       {/* Map */}
       <div className="w-full h-64 rounded-lg overflow-hidden">

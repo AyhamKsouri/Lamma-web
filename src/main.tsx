@@ -4,6 +4,8 @@ import App from './App';
 import './styles/index.css';
 import { AuthProvider } from './context/AuthContext';  // ✅ import this
 import { UserProvider } from './context/UserContext';
+import 'leaflet/dist/leaflet.css';
+
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
