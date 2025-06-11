@@ -35,6 +35,7 @@ export default function UserProfile() {
   const [createdEvents, setCreatedEvents] = useState<EventData[]>([]);
   const [likedEvents, setLikedEvents] = useState<EventData[]>([]);
   const [attendingEvents, setAttendingEvents] = useState<EventData[]>([]);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -50,16 +51,37 @@ export default function UserProfile() {
       ]);
 
       setUser(userRes.data);
-      setFollowers(statsRes.data.followers || 0);
-      setFollowing(statsRes.data.following || 0);
+      setFollowers(statsRes.data.followersCount || 0);
+      setFollowing(statsRes.data.followingCount || 0);
       setCreatedEvents(createdRes.data);
-      setLikedEvents(likedRes.data.filter((e: EventData) => e.visibility === "public"));
-      setAttendingEvents(attendingRes.data.filter((e: EventData) => e.visibility === "public"));
+      setLikedEvents(likedRes.data.filter((e) => e.visibility === "public"));
+      setAttendingEvents(attendingRes.data.filter((e) => e.visibility === "public"));
+
+      const currentUserId = localStorage.getItem("userId");
+      if (currentUserId) {
+        const currentUser = await api.get(`/api/user-account/${currentUserId}`);
+        const userInfoId = currentUser.data.userInfo._id;
+        const targetUserInfoId = userRes.data.userInfo._id;
+        const isFollowing = currentUser.data.userInfo.following.includes(targetUserInfoId);
+        setIsFollowing(isFollowing);
+      }
     } catch (err) {
       console.error("Failed to load user or events:", err);
       setError("User not found.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    if (!id) return;
+    try {
+      const response = await api.post(`/api/user-account/follow/${id}`);
+      setIsFollowing(response.data.isFollowing);
+      setFollowers(response.data.followers);
+    } catch (err) {
+      console.error("Failed to toggle follow:", err);
+      setError("Failed to toggle follow.");
     }
   };
 
@@ -115,7 +137,12 @@ export default function UserProfile() {
           </div>
         </div>
 
-        <Button className="bg-purple-600 text-white hover:bg-purple-700">Follow</Button>
+        <Button
+          className="bg-purple-600 text-white hover:bg-purple-700"
+          onClick={handleFollowToggle as (e: React.MouseEvent<HTMLButtonElement>) => void}
+        >
+          {isFollowing ? "Unfollow" : "Follow"}
+        </Button>
       </div>
 
       {/* Tabs */}
