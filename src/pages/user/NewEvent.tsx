@@ -407,6 +407,7 @@ const NewEvent: FC = () => {
         </div>
       </motion.div>
     </div>
+    
   );
 };
 

@@ -5,7 +5,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { Toaster } from './components/ui/toaster';
 
 import Layout from './components/user/Layout';
 import Dashboard from './pages/user/Dashboard';
@@ -24,10 +23,14 @@ import EventsAdminPage from './pages/admin/EventsAdminPage';
 import VerifyResetCodePage from './components/common/VerifyResetCodePage';
 import ResetPasswordPage from './components/common/ResetPasswordPage';
 import UserProfile from './pages/user/UserProfile';
+import CreatorEventDetails from './pages/user/creatorEventDetails';
+import {Toaster} from 'react-hot-toast';
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter> 
+      <Toaster position="top-right"/>
         <Routes>
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
@@ -50,10 +53,12 @@ function App() {
             <Route path="events" element={<Events />} />
             <Route path="new-event" element={<NewEvent />} />
             <Route path="events/:id" element={<EventDetails />} />
+            <Route path="events/:id/creator" element={<CreatorEventDetails />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="profile" element={<Profile />} />
             <Route path="edit-profile" element={<EditProfile />} />
             <Route path="/profile/:id" element={<UserProfile />} />
+            
             
 
 
@@ -71,8 +76,6 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
-
-      <Toaster />
     </AuthProvider>
   );
 }
