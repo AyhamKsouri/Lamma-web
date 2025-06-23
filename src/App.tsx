@@ -24,7 +24,9 @@ import VerifyResetCodePage from './components/common/VerifyResetCodePage';
 import ResetPasswordPage from './components/common/ResetPasswordPage';
 import UserProfile from './pages/user/UserProfile';
 import CreatorEventDetails from './pages/user/creatorEventDetails';
+import ReportsPage from './pages/admin/Reportspage';
 import {Toaster} from 'react-hot-toast';
+import ReportDetailPage from "./pages/admin/ReportDetailsPage";
 
 function App() {
   return (
@@ -67,6 +69,12 @@ function App() {
             <Route path="admin/users" element={<UsersAdminPage />} />
             <Route path="admin/users/:id" element={<UserDetailAdminPage />} />
             <Route path="/admin/events" element={<EventsAdminPage />} />
+            <Route path="/admin/reports" element={<ReportsPage />} />
+            <Route path="/admin/reports/:id" element={<ReportDetailPage />} /> 
+
+            {/* 404 inside public area */}
+
+            
 
             {/* 404 inside protected area */}
             <Route path="*" element={<NotFound />} />

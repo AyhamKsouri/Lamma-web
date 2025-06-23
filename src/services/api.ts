@@ -1,4 +1,3 @@
-// services/api.ts
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -35,7 +34,7 @@ const api: AxiosInstance = axios.create({
 });
 
 /**
- * 1) Attach the JWT on every request
+ * Attach JWT token to all requests
  */
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('jwtToken');
@@ -43,9 +42,8 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  // For any admin endpoint, disable browser caching:
+  // Prevent browser caching for admin requests
   if (config.url?.startsWith("/api/admin") && config.headers) {
-    // ↓ cast to any so TS doesn’t complain about unknown header keys
     const h = config.headers as any;
     h["Cache-Control"] = "no-store";
     h.Pragma = "no-cache";
@@ -54,9 +52,8 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-
 /**
- * Token‐refresh queueing logic
+ * Refresh token mechanism
  */
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -66,11 +63,8 @@ let failedQueue: Array<{
 
 const processQueue = (error: Error | null = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
-    if (error) {
-      reject(error);
-    } else {
-      resolve();
-    }
+    if (error) reject(error);
+    else resolve();
   });
   failedQueue = [];
 };
@@ -79,12 +73,11 @@ api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig;
-    if (!originalRequest) {
-      return Promise.reject(error);
-    }
+    if (!originalRequest) return Promise.reject(error);
 
-    // 401 → try refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isUnauthorized = error.response?.status === 401;
+
+    if (isUnauthorized && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -105,34 +98,36 @@ api.interceptors.response.use(
         const resp = await api.post<RefreshTokenResponse>('/api/auth/refresh', {
           refreshToken,
         });
-        const { token, refreshToken: newRefreshToken } = resp.data;
 
+        const { token, refreshToken: newRefresh } = resp.data;
         localStorage.setItem('jwtToken', token);
-        if (newRefreshToken) {
-          localStorage.setItem('refreshToken', newRefreshToken);
-        }
+        if (newRefresh) localStorage.setItem('refreshToken', newRefresh);
 
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         processQueue();
         return api(originalRequest);
-      } catch (refreshErr) {
-        processQueue(refreshErr as Error);
+      } catch (refreshErr: any) {
+        processQueue(refreshErr);
         localStorage.removeItem('jwtToken');
         localStorage.removeItem('refreshToken');
+
+        // ❗️Prevent infinite loop
+        if (originalRequest.url?.includes('/api/report')) {
+          return Promise.reject(new AuthError('Session expired. Please log in again.'));
+        }
+
         throw new AuthError('Session expired');
       } finally {
         isRefreshing = false;
       }
     }
 
-    // 403 → permission
     if (error.response?.status === 403) {
       throw new Error('You do not have permission to perform this action');
     }
 
-    // network
     if (error.code === 'ERR_NETWORK') {
-      throw new Error('Network error: Please check your internet connection');
+      throw new Error('Network error. Please check your internet connection');
     }
 
     return Promise.reject(error);
@@ -140,7 +135,7 @@ api.interceptors.response.use(
 );
 
 /**
- * Our simplified wrapper that always returns `response.data`
+ * Simplified wrapper for .data access
  */
 export const apiClient = {
   get: <T>(url: string, config = {}) =>

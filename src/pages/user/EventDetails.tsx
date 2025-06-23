@@ -8,7 +8,17 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import * as reservationService from "@/services/reservationService";
 import { toast } from "react-hot-toast";
+const DEFAULT_BANNER = '/default-event-banner.jpg';
+const API = import.meta.env.VITE_API_URL || '';
+import ReportModal from "@/components/reportModal";
 
+
+
+// helper to normalize a photo filename into a real <img> src
+function resolvePhoto(src: string) {
+  if (src.startsWith('http')) return src;
+  return `${API}/uploads/eventPhotos/${src}`;
+}
 interface UserData {
   _id: string;
   email: string;
@@ -68,6 +78,8 @@ const EventDetails: FC = () => {
   const navigate = useNavigate();
   const [partySize, setPartySize] = useState(1);
   const [reservation, setReservation] = useState<reservationService.Reservation | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportData, setReportData] = useState<{ type: "event" | "comment"; id: string } | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -108,33 +120,23 @@ const EventDetails: FC = () => {
     commentEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [comments]);
 
-  // Fetch reservation for the current user
-  useEffect(() => {
-    if (!id) return;
-    reservationService.getEventReservations(id)
-      .then(res => {
-        const mine = res.data.find(r => r.user._id === user?._id);
-        setReservation(mine || null);
-      })
-      .catch(console.error);
-  }, [id, user]);
 
-  const handleReservation = async (choice: "yes" | "maybe" | "no") => {
-    if (!id) return;
-    const statusMap = { yes: "going", maybe: "interested", no: "notgoing" };
+
+  async function handleMyRSVP(choice: "yes" | "maybe" | "no") {
+    if (!id) return
     try {
-      const res = await api.post(`/api/event/${id}/rsvp`, {
-        status: statusMap[choice],
-      });
-      setReservationState(choice);
-      setShowReservationMsg(`RSVP status updated to "${choice}"`);
-      setTimeout(() => setShowReservationMsg(""), 3000);
-      setEvent(prev => prev ? { ...prev, guests: res.data?.rsvps || prev.guests } : prev);
-    } catch (err) {
-      console.error("Failed to update RSVP:", err);
-      setError("Failed to update RSVP status.");
+      const { data } = await api.post<{ guests: Guest[] }>(
+        `/api/event/${id}/rsvp`,
+        { status: choice }
+      )
+      setEvent(e => e ? { ...e, guests: data.guests } : e)
+      toast.success(`RSVP set to "${choice}"!`)
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.response?.data?.error || "Failed to update RSVP")
     }
-  };
+  }
+
 
   const handleToggleLike = async () => {
     if (!id) return;
@@ -226,6 +228,7 @@ const EventDetails: FC = () => {
 
   const displayDate = `${new Date(event.startDate).toLocaleDateString()} • ${event.startTime}`;
 
+
   return (
     <>
       <div className="max-w-4xl mx-auto py-6 px-4 space-y-6 animate-fade-in">
@@ -233,8 +236,21 @@ const EventDetails: FC = () => {
 
         {/* Banner */}
         <div className="rounded-lg overflow-hidden shadow-lg">
-          <img src={event.bannerUrl} alt={event.title} className="w-full h-64 object-cover" loading="lazy" />
+          <img
+            src={
+              event.photos?.[0]
+                ? resolvePhoto(event.photos[0])
+                : DEFAULT_BANNER
+            }
+            alt={event.title}
+            className="w-full h-64 object-cover"
+            loading="lazy"
+            onError={e => {
+              (e.currentTarget as HTMLImageElement).src = DEFAULT_BANNER;
+            }}
+          />
         </div>
+
 
         {/* Title & Info */}
         <div className="space-y-2">
@@ -265,30 +281,44 @@ const EventDetails: FC = () => {
             {isLiked ? "Unlike" : "Like"} ({likesCount})
           </Button>
         </div>
-
+        <Button
+          variant="ghost"
+          className="text-red-500 hover:text-red-600"
+          onClick={() => {
+            setReportData({ type: "event", id: event._id });
+            setReportModalOpen(true);
+          }}
+        >
+          🚩 Report Event
+        </Button>
         {/* Photo Gallery */}
-        {event.photos && event.photos.length > 0 && (
+        {(event.photos ?? []).length > 0 && (
           <div className="relative">
             <button
-              onClick={() => galleryRef.current?.scrollBy({ left: -300, behavior: "smooth" })}
+              onClick={() => galleryRef.current?.scrollBy({ left: -300, behavior: 'smooth' })}
               aria-label="Previous photos"
               className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow z-10"
             >
               ◀
             </button>
-            <div ref={galleryRef} className="flex space-x-4 overflow-x-auto snap-x snap-mandatory scroll-smooth py-2">
-              {event.photos.map((src, idx) => (
+
+            <div ref={galleryRef} className="flex space-x-4 overflow-x-auto py-2">
+              {event.photos!.map((file, idx) => (
                 <img
                   key={idx}
-                  src={src}
-                  className="w-64 h-40 object-cover rounded-lg snap-center flex-shrink-0"
-                  loading="lazy"
+                  src={resolvePhoto(file)}
                   alt={`Photo ${idx + 1}`}
+                  className="w-64 h-40 object-cover rounded-lg"
+                  loading="lazy"
+                  onError={e => {
+                    (e.currentTarget as HTMLImageElement).src = '/default-photo.png';
+                  }}
                 />
               ))}
             </div>
+
             <button
-              onClick={() => galleryRef.current?.scrollBy({ left: 300, behavior: "smooth" })}
+              onClick={() => galleryRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
               aria-label="Next photos"
               className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow z-10"
             >
@@ -296,14 +326,13 @@ const EventDetails: FC = () => {
             </button>
           </div>
         )}
-
         {/* Reservation (RSVP) */}
         <div className="space-y-3">
           <div className="flex items-center space-x-4 flex-wrap">
             {(["yes", "maybe", "no"] as const).map(choice => (
               <Button
                 key={choice}
-                onClick={() => handleReservation(choice)}
+                onClick={() => handleMyRSVP(choice)}
                 variant={reservationState === choice ? "default" : "outline"}
                 className={`${reservationState === choice
                   ? "bg-indigo-600 text-white hover:bg-indigo-700"
@@ -411,7 +440,27 @@ const EventDetails: FC = () => {
                       ? format(new Date(c.createdAt), "yyyy-MM-dd HH:mm:ss")
                       : "Unknown date"}
                   </p>
-                  <p className="text-gray-900">{c.message}</p>
+                  <p className="text-gray-900 dark:text-white">{c.message}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-red-400 hover:text-red-600 dark:text-red-300 dark:hover:text-red-500"
+                    onClick={() => {
+                      setReportData({ type: "comment", id: c._id });
+                      setReportModalOpen(true);
+                    }}
+                  >
+                    Report
+                  </Button>
+
+                  {reportData && (
+                    <ReportModal
+                      open={reportModalOpen}
+                      onClose={() => setReportModalOpen(false)}
+                      targetId={reportData.id}
+                      type={reportData.type}
+                    />
+                  )}
                 </li>
               ))
             )}
@@ -494,14 +543,16 @@ const EventDetails: FC = () => {
                           <img
                             src={
                               g.user.userInfo?.profileImage
-                                ? `${import.meta.env.VITE_API_URL}${g.user.userInfo.profileImage}`
+                                ? `${import.meta.env.VITE_API_URL}/uploads/profileImages/${g.user.userInfo.profileImage}`
                                 : "/images/profile-pic.png"
                             }
                             alt={g.user.userInfo?.name || g.user.email}
                             className="w-8 h-8 rounded-full object-cover border"
                           />
+
+
                           <span className="text-gray-800 dark:text-gray-200">
-                            {g.user.userInfo?.name || g.user.email}
+                            {g.user.userInfo?.name || "Anonymous"}
                           </span>
                         </li>
                       ))}
