@@ -91,61 +91,64 @@ export default function UserProfile() {
   const [followingListError, setFollowingListError] = useState<string | null>(null);
 
   // Fetch profile, stats & events
-  const fetchProfileAndEvents = async () => {
-    if (!id) return;
-    setLoadingProfile(true);
+const fetchProfileAndEvents = async () => {
+  if (!id) return;
+  setLoadingProfile(true);
+
+  try {
+    // 1) load profile, stats, & events in parallel
+    const [
+      userRes,
+      statsRes,
+      createdRes,
+      likedRes,
+      attendingRes,
+    ] = await Promise.all([
+      api.get(`/api/user-account/${id}`),
+      api.get(`/api/user-account/${id}/follow-stats`),
+      api.get(`/api/event/user/${id}/public-events`),
+      api.get(`/api/event/user/${id}/liked`, {
+        headers: { "Cache-Control": "no-cache" },
+        params: { t: Date.now() },
+      }),
+      api.get(`/api/event/user/${id}/attending`),
+    ]);
+
+    // 2) stash into state
+    setUser(userRes.data);
+    setFollowersCount(statsRes.data.followersCount || 0);
+    setFollowingCount(statsRes.data.followingCount || 0);
+
+    setCreatedEvents(createdRes.data);
+    setLikedEvents(
+      Array.isArray(likedRes.data)
+        ? likedRes.data.filter(
+            (e) => String(e.visibility).toLowerCase() === "public"
+          )
+        : []
+    );
+    setAttendingEvents(
+      attendingRes.data.filter((e) => e.visibility === "public")
+    );
+
+    // 3) now ask “am I following this user?” once and for all
     try {
-      const [
-        userRes,
-        statsRes,
-        createdRes,
-        likedRes,
-        attendingRes,
-      ] = await Promise.all([
-        api.get(`/api/user-account/${id}`),
-        api.get(`/api/user-account/${id}/follow-stats`),
-        api.get(`/api/event/user/${id}/public-events`),
-        api.get(`/api/event/user/${id}/liked`, {
-          headers: { "Cache-Control": "no-cache" },
-          params: { t: Date.now() },
-        }),
-        api.get(`/api/event/user/${id}/attending`),
-      ]);
-
-      setUser(userRes.data);
-      setFollowersCount(statsRes.data.followersCount || 0);
-      setFollowingCount(statsRes.data.followingCount || 0);
-
-      setCreatedEvents(createdRes.data);
-      setLikedEvents(
-        Array.isArray(likedRes.data)
-          ? likedRes.data.filter(
-              (e) => String(e.visibility).toLowerCase() === "public"
-            )
-          : []
+      const followRes = await api.get(
+        `/api/user-account/${id}/is-following`
       );
-      setAttendingEvents(
-        attendingRes.data.filter((e) => e.visibility === "public")
-      );
-
-      // Determine if current user follows this profile
-      const currentUserId = localStorage.getItem("userId");
-      if (currentUserId) {
-        const meRes = await api.get(`/api/user-account/${currentUserId}`);
-        const myFollowing = await api.get(
-          `/api/user-account/${currentUserId}/following`
-        );
-        const iFollow = Array.isArray(myFollowing.data) &&
-          myFollowing.data.some((u: SimpleUser) => u._id === id);
-        setIsFollowing(iFollow);
-      }
+      setIsFollowing(Boolean(followRes.data.isFollowing));
     } catch (err) {
-      console.error(err);
-      setError("Failed to load profile.");
-    } finally {
-      setLoadingProfile(false);
+      console.error("Could not check follow status:", err);
+      setIsFollowing(false);
     }
-  };
+  } catch (err) {
+    console.error("Failed to load profile or events:", err);
+    setError("Failed to load profile.");
+  } finally {
+    setLoadingProfile(false);
+  }
+};
+
 
   useEffect(() => {
     fetchProfileAndEvents();
