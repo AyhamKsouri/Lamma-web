@@ -11,6 +11,8 @@ import { toast } from "react-hot-toast";
 const DEFAULT_BANNER = '/default-event-banner.jpg';
 const API = import.meta.env.VITE_API_URL || '';
 import ReportModal from "@/components/reportModal";
+import FeedbackSection from "@/components/FeedbackSection";
+
 
 
 
@@ -109,6 +111,10 @@ const EventDetails: FC = () => {
       })
       .finally(() => setLoading(false));
   }, [id]);
+  // Determine if this event has already occurred:
+  const isPast = event
+    ? new Date(event.startDate).getTime() < Date.now()
+    : false;
   useEffect(() => {
     if (event && user && event.createdBy?._id === user._id) {
       // you’re the creator—go to the creator page
@@ -119,7 +125,6 @@ const EventDetails: FC = () => {
   useEffect(() => {
     commentEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [comments]);
-
 
 
   async function handleMyRSVP(choice: "yes" | "maybe" | "no") {
@@ -232,6 +237,12 @@ const EventDetails: FC = () => {
   return (
     <>
       <div className="max-w-4xl mx-auto py-6 px-4 space-y-6 animate-fade-in">
+        {/*─── PAST/EVENT FLAG ───────────────────────────────────────────────*/}
+        {isPast && (
+          <p className="text-center text-yellow-600 font-semibold">
+            This event has passed — details are now static. Feel free to leave your feedback below!
+          </p>
+        )}
         <Link to="/" className="text-indigo-600 hover:underline">← Back to Home</Link>
 
         {/* Banner */}
@@ -257,6 +268,11 @@ const EventDetails: FC = () => {
           <h1 className="text-3xl font-bold">{event.title}</h1>
           <p className="text-gray-600">{displayDate}</p>
           <p className="text-gray-600 truncate">{event.location}</p>
+          {isPast && (
+            <p className="text-sm text-gray-500 italic">
+              This event ended on {new Date(event.startDate).toLocaleDateString()}.
+            </p>
+          )}
           {event.createdBy?.userInfo?.name && (
             <div className="flex items-center gap-3">
               <img
@@ -273,13 +289,16 @@ const EventDetails: FC = () => {
               </Link>
             </div>
           )}
-          <Button
-            onClick={handleToggleLike}
-            className="bg-red-500 text-white hover:bg-red-600 px-3 sm:px-4 py-2 rounded-lg transition duration-200"
-            aria-label={isLiked ? "Unlike this event" : "Like this event"}
-          >
-            {isLiked ? "Unlike" : "Like"} ({likesCount})
-          </Button>
+          {/* Like Button */}
+          {!isPast && (
+            <Button
+              onClick={handleToggleLike}
+              className="bg-red-500 text-white hover:bg-red-600 px-3 sm:px-4 py-2 rounded-lg transition duration-200"
+              aria-label={isLiked ? "Unlike this event" : "Like this event"}
+            >
+              {isLiked ? "Unlike" : "Like"} ({likesCount})
+            </Button>
+          )}
         </div>
         <Button
           variant="ghost"
@@ -327,44 +346,48 @@ const EventDetails: FC = () => {
           </div>
         )}
         {/* Reservation (RSVP) */}
-        <div className="space-y-3">
-          <div className="flex items-center space-x-4 flex-wrap">
-            {(["yes", "maybe", "no"] as const).map(choice => (
-              <Button
-                key={choice}
-                onClick={() => handleMyRSVP(choice)}
-                variant={reservationState === choice ? "default" : "outline"}
-                className={`${reservationState === choice
-                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                  } px-3 sm:px-4 py-2 rounded-lg transition duration-200`}
-              >
-                {choice === "yes" ? "✅ Yes" : choice === "maybe" ? "🤔 Maybe" : "❌ No"}
-              </Button>
-            ))}
-            {reservationState && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setReservationState(null);
-                  setShowReservationMsg("RSVP cleared");
-                  setTimeout(() => setShowReservationMsg(""), 3000);
-                }}
-                className="ml-2 bg-white border border-gray-300 text-gray-800 hover:bg-red-100"
-              >
-                Clear RSVP
-              </Button>
-            )}
+        {!isPast && (
+          <div className="space-y-3">
+            <div className="flex items-center space-x-4 flex-wrap">
+              {(["yes", "maybe", "no"] as const).map(choice => (
+                <Button
+                  key={choice}
+                  onClick={() => handleMyRSVP(choice)}
+                  variant={reservationState === choice ? "default" : "outline"}
+                  className={`${reservationState === choice
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    } px-3 sm:px-4 py-2 rounded-lg transition duration-200`}
+                >
+                  {choice === "yes" ? "✅ Yes" : choice === "maybe" ? "🤔 Maybe" : "❌ No"}
+                </Button>
+              ))}
+              {reservationState && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setReservationState(null);
+                    setShowReservationMsg("RSVP cleared");
+                    setTimeout(() => setShowReservationMsg(""), 3000);
+                  }}
+                  className="ml-2 bg-white border border-gray-300 text-gray-800 hover:bg-red-100"
+                >
+                  Clear RSVP
+                </Button>
+              )}
+            </div>
+            {showReservationMsg && <span className="text-green-600 font-medium">{showReservationMsg}</span>}
           </div>
-          {showReservationMsg && <span className="text-green-600 font-medium">{showReservationMsg}</span>}
-        </div>
+        )}
+
+        {/* Reservation Section */}
         <div className="mt-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-lg">
-          {reservation ? (
+          {!isPast && reservation ? (
             <p className="text-green-500">
               You’ve reserved for {reservation.numberOfPeople} people (
               {reservation.status})
             </p>
-          ) : (
+          ) : !isPast ? (
             <div className="flex items-center space-x-2">
               <label>Reserve for</label>
               <input
@@ -381,13 +404,15 @@ const EventDetails: FC = () => {
                 Reserve
               </button>
             </div>
+          ) : (
+            <p className="text-gray-500">Reservations are closed for this past event.</p>
           )}
         </div>
 
 
         {/* Guest summary stats */}
-        <div className="flex items-center space-x-4 mt-6 flex-wrap">
-          {(["yes", "maybe", "no"] as const).map(status => {
+        {!isPast && (
+          <div className="flex items-center space-x-4 mt-6 flex-wrap">          {(["yes", "maybe", "no"] as const).map(status => {
             const emoji = status === "yes" ? "✅" : status === "maybe" ? "🤔" : "❌";
             const count = event.guests?.filter(g => g.rsvp === status).length || 0;
             const bg =
@@ -407,14 +432,14 @@ const EventDetails: FC = () => {
               </button>
             );
           })}
-          <button
-            onClick={() => setShowGuestList(true)}
-            className="ml-4 text-indigo-600 underline hover:text-indigo-800"
-          >
-            View all guests
-          </button>
-        </div>
-
+            <button
+              onClick={() => setShowGuestList(true)}
+              className="ml-4 text-indigo-600 underline hover:text-indigo-800"
+            >
+              View all guests
+            </button>
+          </div>
+        )}
         {/* Map */}
         <div className="w-full h-64 rounded-lg overflow-hidden">
           <iframe
@@ -426,64 +451,67 @@ const EventDetails: FC = () => {
         </div>
 
         {/* Comments */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Comments</h2>
-          <ul className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-2 bg-gray-50">
-            {comments.length === 0 ? (
-              <li className="text-gray-500 text-center py-4">No comments yet. Be the first to comment!</li>
-            ) : (
-              comments.map(c => (
-                <li key={c._id} className="border-b pb-2 last:border-b-0 last:pb-0">
-                  <p className="text-sm text-gray-500">
-                    {c.author.userInfo?.name || c.author.email} •{" "}
-                    {c.createdAt && !isNaN(new Date(c.createdAt).getTime())
-                      ? format(new Date(c.createdAt), "yyyy-MM-dd HH:mm:ss")
-                      : "Unknown date"}
-                  </p>
-                  <p className="text-gray-900 dark:text-white">{c.message}</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-red-400 hover:text-red-600 dark:text-red-300 dark:hover:text-red-500"
-                    onClick={() => {
-                      setReportData({ type: "comment", id: c._id });
-                      setReportModalOpen(true);
-                    }}
-                  >
-                    Report
-                  </Button>
+        {!isPast && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Comments</h2>
+            <ul className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-2 bg-gray-50">
+              {comments.length === 0 ? (
+                <li className="text-gray-500 text-center py-4">No comments yet. Be the first to comment!</li>
+              ) : (
+                comments.map(c => (
+                  <li key={c._id} className="border-b pb-2 last:border-b-0 last:pb-0">
+                    <p className="text-sm text-gray-500">
+                      {c.author.userInfo?.name || c.author.email} •{" "}
+                      {c.createdAt && !isNaN(new Date(c.createdAt).getTime())
+                        ? format(new Date(c.createdAt), "yyyy-MM-dd HH:mm:ss")
+                        : "Unknown date"}
+                    </p>
+                    <p className="text-gray-900 dark:text-white">{c.message}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-red-400 hover:text-red-600 dark:text-red-300 dark:hover:text-red-500"
+                      onClick={() => {
+                        setReportData({ type: "comment", id: c._id });
+                        setReportModalOpen(true);
+                      }}
+                    >
+                      Report
+                    </Button>
 
-                  {reportData && (
-                    <ReportModal
-                      open={reportModalOpen}
-                      onClose={() => setReportModalOpen(false)}
-                      targetId={reportData.id}
-                      type={reportData.type}
-                    />
-                  )}
-                </li>
-              ))
-            )}
-            <div ref={commentEndRef} />
-          </ul>
-          {commentError && <p className="text-red-500 text-sm">{commentError}</p>}
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={commentText}
-              onChange={e => setCommentText(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && handleAddComment()}
-              placeholder="Add a comment…"
-              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
-            />
-            <Button
-              onClick={handleAddComment}
-              className="bg-indigo-600 text-white hover:bg-indigo-700 px-3 sm:px-4 py-2 rounded-lg transition duration-200"
-            >
-              Submit
-            </Button>
+                    {reportData && (
+                      <ReportModal
+                        open={reportModalOpen}
+                        onClose={() => setReportModalOpen(false)}
+                        targetId={reportData.id}
+                        type={reportData.type}
+                      />
+                    )}
+                  </li>
+                ))
+              )}
+              <div ref={commentEndRef} />
+            </ul>
+            {commentError && <p className="text-red-500 text-sm">{commentError}</p>}
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && handleAddComment()}
+                placeholder="Add a comment…"
+                className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
+              />
+              <Button
+                onClick={handleAddComment}
+                className="bg-indigo-600 text-white hover:bg-indigo-700 px-3 sm:px-4 py-2 rounded-lg transition duration-200"
+              >
+                Submit
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
+
 
         {/* Actions */}
         <div className="flex flex-wrap gap-4">
@@ -506,6 +534,14 @@ const EventDetails: FC = () => {
           </a>
         </div>
       </div>
+            { /* ─── Feedback section for past events ────────────────────────────────────── */ }
+      {isPast && id && (
+        <div className="max-w-4xl mx-auto py-6 px-4">
+          <FeedbackSection eventId={id} />
+        </div>
+      )}
+ 
+
 
       {/* Modal Overlay */}
       {showGuestList && (

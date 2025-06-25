@@ -440,3 +440,43 @@ export async function getGoingEvents(): Promise<EventData[]> {
     throw handleEventApiError(error, 'Failed to fetch attending events');
   }
 }
+// Feedback entry returned from the server
+export interface Feedback {
+  _id: string;
+  event: string;
+  user: {
+    _id: string;
+    email: string;
+    profileImage?: string;
+  };
+  rating: number;
+  message: string;
+  likes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Aggregate stats for an event
+export interface EventRating {
+  averageRating: number;
+  feedbackCount: number;
+}
+
+/** Submit (or overwrite) this user’s star feedback on an event */
+export const addEventFeedback = (
+  eventId: string,
+  rating: number,
+  message?: string
+) => {
+  return api.post<Feedback>(`/api/feedbacks/${eventId}`, { rating, message });
+};
+
+/** Load all feedback entries (stars + messages) for an event */
+export const fetchEventFeedbacks = (eventId: string) => {
+  return api.get<Feedback[]>(`/api/feedbacks/${eventId}`);
+};
+
+/** Load just the aggregate star‐average and count for an event */
+export const fetchEventRating = (eventId: string) => {
+  return api.get<EventRating>(`/api/feedbacks/${eventId}/rating`);
+};

@@ -81,37 +81,37 @@ export default function ProfilePage() {
   };
 
   const openFollowers = async () => {
-  console.log("⏳ openFollowers() for", user!._id);
-  try {
-    setIsFollowersLoading(true);
-    setFollowersError(null);
-    const list = await fetchFollowers(user!._id);
-    console.log("Followers Data:", list, "Length:", list.length);
-    setFollowersList(list);
-  } catch (err) {
-    console.error("❌ Failed to fetch followers:", err);
-    setFollowersError("Failed to load followers.");
-  } finally {
-    setIsFollowersLoading(false);
-    setShowFollowers(true);
-  }
-};
+    console.log("⏳ openFollowers() for", user!._id);
+    try {
+      setIsFollowersLoading(true);
+      setFollowersError(null);
+      const list = await fetchFollowers(user!._id);
+      console.log("Followers Data:", list, "Length:", list.length);
+      setFollowersList(list);
+    } catch (err) {
+      console.error("❌ Failed to fetch followers:", err);
+      setFollowersError("Failed to load followers.");
+    } finally {
+      setIsFollowersLoading(false);
+      setShowFollowers(true);
+    }
+  };
 
-const openFollowing = async () => {
-  try {
-    setIsFollowingLoading(true);
-    setFollowingError(null);
-    const list2 = await fetchFollowing(user!._id) || [];
-    console.log("Following Data:", list2, "Length:", list2.length);
-    setFollowingList(list2);
-  } catch (err) {
-    console.error("Failed to fetch following:", err);
-    setFollowingError("Failed to load following.");
-  } finally {
-    setIsFollowingLoading(false);
-    setShowFollowing(true);
-  }
-};
+  const openFollowing = async () => {
+    try {
+      setIsFollowingLoading(true);
+      setFollowingError(null);
+      const list2 = await fetchFollowing(user!._id) || [];
+      console.log("Following Data:", list2, "Length:", list2.length);
+      setFollowingList(list2);
+    } catch (err) {
+      console.error("Failed to fetch following:", err);
+      setFollowingError("Failed to load following.");
+    } finally {
+      setIsFollowingLoading(false);
+      setShowFollowing(true);
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -200,7 +200,7 @@ const openFollowing = async () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 to-blue-100 dark:from-gray-900 dark:to-gray-800">
         <p className="text-gray-500 text-lg">Please sign in to view your profile</p>
       </div>
     );
@@ -208,9 +208,9 @@ const openFollowing = async () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row py-12 px-6 gap-10">
-        <aside className="w-full md:w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col justify-between max-h-[90vh] bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-gray-800 dark:to-gray-900 transform hover:scale-105 transition-transform duration-300">
-          <div className="flex flex-col items-center space-y-6 relative">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row py-4 px-2 md:px-4 gap-6">
+        <aside className="w-full md:w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-4 flex flex-col justify-between max-h-[95vh] overflow-auto bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-gray-800 dark:to-gray-900">
+          <div className="flex flex-col items-center space-y-4 relative">
             <div className="relative">
               <Avatar className="w-32 h-32 border-4 border-cyan-400 shadow-lg transform hover:scale-110 transition-transform duration-300">
                 <AvatarImage
@@ -228,7 +228,7 @@ const openFollowing = async () => {
             <p className="text-gray-600 dark:text-gray-300 text-center">{user.email}</p>
             {statsError && <p className="text-red-500 text-sm">{statsError}</p>}
           </div>
-          <div className="mt-8 flex flex-col gap-4">
+          <div className="mt-6 flex flex-col gap-3">
             <Link to="/edit-profile">
               <Button className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-full hover:from-cyan-600 hover:to-purple-700 transition-all duration-200">
                 <Edit className="w-5 h-5 mr-2" />
@@ -248,37 +248,37 @@ const openFollowing = async () => {
             </Button>
 
             {/* --- Modern & Fun BIO CARD --- */}
-            <div className="mt-4 bg-gradient-to-br from-cyan-100 to-purple-200 dark:from-gray-800 dark:to-gray-900 p-5 rounded-2xl shadow-lg transform hover:shadow-xl transition-all duration-300">
-              <h3 className="text-lg font-extrabold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+            <div className="mt-4 bg-gradient-to-br from-cyan-100 to-purple-200 dark:from-gray-800 dark:to-gray-900 p-4 rounded-2xl shadow-lg transform hover:shadow-xl transition-all duration-300">
+              <h3 className="text-lg font-extrabold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" /> About Me
               </h3>
               {isEditingBio ? (
-                <div className="space-y-3 animate-fade-in">
+                <div className="space-y-2">
                   <textarea
                     value={bio}
                     onChange={handleBioChange}
                     placeholder="Share your awesome story! 🎉"
-                    className="w-full p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all duration-200 resize-y min-h-[100px]"
+                    className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all duration-200 resize-y min-h-[80px]"
                   />
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <Button
                       onClick={handleSaveBio}
-                      className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white hover:from-cyan-600 hover:to-purple-700 rounded-full px-4 py-2 transition-all duration-200"
+                      className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white hover:from-cyan-600 hover:to-purple-700 rounded-full px-3 py-1 transition-all duration-200"
                     >
                       Save & Shine ✨
                     </Button>
                     <Button
                       onClick={handleCancelBio}
                       variant="outline"
-                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full px-4 py-2 transition-all duration-200"
+                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full px-3 py-1 transition-all duration-200"
                     >
                       Oops, Cancel!
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-white dark:bg-gray-800 p-3 rounded-lg shadow-inner">
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-white dark:bg-gray-800 p-2 rounded-lg shadow-inner">
                     {bio || "No epic tale yet! Click 'Edit Profile' to unleash your vibe! 🚀"}
                   </p>
                   <Button
@@ -300,7 +300,7 @@ const openFollowing = async () => {
             </Button>
           </div>
 
-          <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3 text-sm">
+          <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2 text-sm">
             <div className="flex justify-between text-gray-700 dark:text-gray-300">
               <span>My Events</span>
               <span>{events.length}</span>
@@ -317,7 +317,7 @@ const openFollowing = async () => {
             </div>
           </div>
         </aside>
-        <main className="flex-1 flex flex-col space-y-8">
+        <main className="flex-1 max-w-4xl">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
               <TabsList className="px-6 bg-white dark:bg-gray-800">
