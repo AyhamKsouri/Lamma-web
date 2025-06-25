@@ -23,12 +23,6 @@ export interface EventRecord {
   type?: string;
 }
 
-export interface MediaRecord {
-  _id: string;
-  filename?: string;
-  url?: string;
-}
-
 /** A user record for admin management */
 export interface UserRecord {
   _id: string;
@@ -37,8 +31,14 @@ export interface UserRecord {
   role: string;
   createdAt: string;
   profileImage?: string;
+  banned?: boolean;
 }
 
+export interface MediaRecord {
+  _id: string;
+  filename?: string;
+  url?: string;
+}
 
 export interface AdminEventRecord {
   _id: string;
@@ -58,7 +58,10 @@ export interface AdminEventRecord {
     };
   };
 }
-
+interface UpdateStatusResponse {
+  message: string;
+  user: UserRecord;
+}
 
 // — Service calls ——————————————————————————————————————————————————
 
@@ -98,18 +101,15 @@ export function getUserById(id: string): Promise<UserRecord> {
   return apiClient.get<UserRecord>(`/api/admin/users/${id}`);
 }
 
-export function updateUserRole(
-  id: string,
-  role: string
-): Promise<UserRecord> {
+export function updateUserRole(id: string, role: string): Promise<UserRecord> {
   return apiClient.put<UserRecord>(`/api/admin/users/${id}`, { role });
-} 
+}
 
 export function softDeleteUser(id: string): Promise<void> {
   return apiClient.delete<void>(`/api/admin/users/${id}`);
 }
-// adminService.ts
-export function getEventsByUser(id: string) {
+
+export function getEventsByUser(id: string): Promise<EventRecord[]> {
   return apiClient.get<EventRecord[]>(`/api/admin/users/${id}/events`);
 }
 
@@ -123,4 +123,16 @@ export function banEvent(id: string): Promise<void> {
 
 export function deleteEvent(id: string): Promise<void> {
   return apiClient.delete<void>(`/api/admin/events/${id}`);
+}
+
+export async function updateUserStatus(
+  id: string,
+  banned: boolean
+): Promise<UserRecord> {
+  // note: apiClient.put<T> should resolve to T directly
+  const data = await apiClient.put<UpdateStatusResponse>(
+    `/api/admin/users/${id}/ban`,
+    { banned }
+  );
+  return data.user;
 }
