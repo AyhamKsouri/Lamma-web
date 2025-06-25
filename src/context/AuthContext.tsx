@@ -85,9 +85,10 @@ export function AuthProvider({ children, tokenKey = 'token' }: AuthProviderProps
     setAuthToken(token);
 
     try {
-      const fresh = await checkToken();
-      setUser(fresh);
-      console.log('✅ Token validated');
+      const response = await checkToken();
+      const freshUser = response.user || response; // Handle nested user object
+      setUser(freshUser);
+      console.log('✅ Token validated', freshUser);
     } catch (err) {
       console.error('❌ Token validation failed:', err);
       setAuthToken(null);
@@ -144,9 +145,10 @@ export function AuthProvider({ children, tokenKey = 'token' }: AuthProviderProps
 
     try {
       setAuthToken(token);
-      const fresh = await checkToken();
-      setUser(fresh);
-      console.log('✅ User reloaded successfully');
+      const response = await checkToken();
+      const freshUser = response.user || response; // Adjust based on response
+      setUser(freshUser);
+      console.log('✅ User reloaded successfully', freshUser);
     } catch (err) {
       console.error('❌ User reload failed:', err);
       setAuthToken(null);

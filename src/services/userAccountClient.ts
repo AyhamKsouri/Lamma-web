@@ -19,7 +19,12 @@ export const fetchFollowers = async (userId: string): Promise<SimpleUser[]> => {
 
 export const fetchFollowing = async (userId: string): Promise<SimpleUser[]> => {
   console.log("[fetchFollowing] calling /following for user:", userId);
-  const data = await apiClient.get<SimpleUser[]>(`/api/user-account/${userId}/following`);
-  console.log("[fetchFollowing] unwrapped data:", data);
-  return data;
+  const response = await apiClient.get<SimpleUser[]>(`/api/user-account/${userId}/following`);
+  console.log("[fetchFollowing] raw response data:", response); // Log the full response
+  if (!Array.isArray(response)) {
+    console.warn("[fetchFollowing] Unexpected response format, expected array, got:", response);
+    return [];
+  }
+  console.log("[fetchFollowing] unwrapped data:", response);
+  return response;
 };

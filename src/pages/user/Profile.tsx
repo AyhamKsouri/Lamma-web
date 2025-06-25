@@ -3,19 +3,21 @@ import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Edit, Archive, Settings, Calendar as CalIcon, Users, Loader2, MapPin } from "lucide-react";
+import { Edit, Archive, Settings, Calendar as CalIcon, Users, Loader2, MapPin, Sparkles } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/services/api";
 import { fetchFollowers, fetchFollowing, SimpleUser } from "@/services/userAccountClient";
 import { getMyEvents, getGoingEvents, getInterestedEvents, getLikedEvents, EventData } from "@/services/eventService";
 import { AuthError } from "@/services/api";
 import { format, parseISO, isValid } from "date-fns";
+import { fixProfileImagePath } from "@/lib/urlFix";
 
 interface User {
   _id: string;
   name?: string;
   email: string;
   profileImage?: string;
+  bio?: string;
 }
 
 type Tab = "My Events" | "Interested" | "Liked" | "Attending" | "Photos";
@@ -48,7 +50,7 @@ const Modal = ({ title, isOpen, onClose, children }: ModalProps) => {
 };
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, reloadUser } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("My Events");
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,52 +67,64 @@ export default function ProfilePage() {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [imageError, setImageError] = useState<{ [key: string]: boolean }>({});
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bio, setBio] = useState(user?.bio || '');
+
+  useEffect(() => {
+    console.log("User object:", user);
+  }, [user]);
+
+  const getInitials = () => {
+    if (!user?.name) return "JD";
+    const [first, second] = user.name.trim().split(" ");
+    return (first[0] + (second?.[0] || "")).toUpperCase();
+  };
 
   const openFollowers = async () => {
-    console.log("⏳ openFollowers() for", user!._id);
-    try {
-      setIsFollowersLoading(true);
-      setFollowersError(null);
+  console.log("⏳ openFollowers() for", user!._id);
+  try {
+    setIsFollowersLoading(true);
+    setFollowersError(null);
+    const list = await fetchFollowers(user!._id);
+    console.log("Followers Data:", list, "Length:", list.length);
+    setFollowersList(list);
+  } catch (err) {
+    console.error("❌ Failed to fetch followers:", err);
+    setFollowersError("Failed to load followers.");
+  } finally {
+    setIsFollowersLoading(false);
+    setShowFollowers(true);
+  }
+};
 
-      const list = await fetchFollowers(user!._id);
-      console.log("✅ fetchFollowers returned:", list);
-      setFollowersList(list);
-
-    } catch (err) {
-      console.error("❌ Failed to fetch followers:", err);
-      setFollowersError("Failed to load followers.");
-    } finally {
-      setIsFollowersLoading(false);
-      setShowFollowers(true);
-    }
-  };
-
-
-  const openFollowing = async () => {
-    try {
-      setIsFollowingLoading(true);
-      setFollowingError(null);
-      const list2 = await fetchFollowing((user!._id)) || [];
-      setFollowingList(list2);
-    } catch (err) {
-      console.error("Failed to fetch following:", err);
-      setFollowingError("Failed to load following.");
-    } finally {
-      setIsFollowingLoading(false);
-      setShowFollowing(true);
-    }
-  };
+const openFollowing = async () => {
+  try {
+    setIsFollowingLoading(true);
+    setFollowingError(null);
+    const list2 = await fetchFollowing(user!._id) || [];
+    console.log("Following Data:", list2, "Length:", list2.length);
+    setFollowingList(list2);
+  } catch (err) {
+    console.error("Failed to fetch following:", err);
+    setFollowingError("Failed to load following.");
+  } finally {
+    setIsFollowingLoading(false);
+    setShowFollowing(true);
+  }
+};
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setStatsError(null);
-        const res = await api.get(`/api/user-account/${user?._id}/follow-stats`);
+        const res = await api.get(`/api/user-account/${user?._id}?t=${Date.now()}`);
+        console.log("Full User Response:", res.data);
         setFollowers(res.data.followersCount || 0);
         setFollowing(res.data.followingCount || 0);
+        setBio(res.data.bio || '');
       } catch (err) {
-        console.error("Failed to fetch follow stats:", err);
-        setStatsError("Failed to load follower stats.");
+        console.error("Failed to fetch user data:", err.response?.data || err.message);
+        setStatsError("Failed to load user data.");
       }
     };
 
@@ -167,6 +181,23 @@ export default function ProfilePage() {
     return isValid(dateTime) ? format(dateTime, "MMM d, yyyy 'at' h:mm a") : "Date TBD";
   };
 
+  const handleEditBio = () => setIsEditingBio(true);
+  const handleSaveBio = async () => {
+    try {
+      await api.put(`/api/user-account/${user._id}/bio`, { bio });
+      setIsEditingBio(false);
+      if (reloadUser) reloadUser();
+    } catch (err) {
+      console.error("Error saving bio:", err);
+      setStatsError("Failed to update bio.");
+    }
+  };
+  const handleCancelBio = () => {
+    setBio(user?.bio || '');
+    setIsEditingBio(false);
+  };
+  const handleBioChange = (e) => setBio(e.target.value);
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -176,64 +207,120 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row py-8 px-4 gap-8">
-        <aside className="w-full md:w-64 bg-white dark:bg-gray-800 rounded-xl shadow p-4 flex flex-col justify-between max-h-[60vh]">
-          <div className="flex flex-col items-center space-y-4">
-            <Avatar className="w-24 h-24 border-2 border-gray-200 dark:border-gray-700">
-              <AvatarImage src={user.profileImage} alt={user.name || "User"} />
-              <AvatarFallback className="bg-blue-50 text-blue-500">{user.name?.charAt(0) || "U"}</AvatarFallback>
-            </Avatar>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{user.name || "User"}</h2>
-            <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row py-12 px-6 gap-10">
+        <aside className="w-full md:w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 flex flex-col justify-between max-h-[90vh] bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-gray-800 dark:to-gray-900 transform hover:scale-105 transition-transform duration-300">
+          <div className="flex flex-col items-center space-y-6 relative">
+            <div className="relative">
+              <Avatar className="w-32 h-32 border-4 border-cyan-400 shadow-lg transform hover:scale-110 transition-transform duration-300">
+                <AvatarImage
+                  src={fixProfileImagePath(user?.profileImage || "")}
+                  alt={user?.name || "User"}
+                  className="rounded-full object-cover"
+                />
+                <AvatarFallback className="bg-cyan-200 text-cyan-800 font-bold">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <Sparkles className="absolute -top-4 -right-4 h-8 w-8 text-yellow-400 animate-pulse" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{user.name || "User"}</h2>
+            <p className="text-gray-600 dark:text-gray-300 text-center">{user.email}</p>
             {statsError && <p className="text-red-500 text-sm">{statsError}</p>}
           </div>
-          <div className="mt-6 flex flex-col gap-2">
+          <div className="mt-8 flex flex-col gap-4">
             <Link to="/edit-profile">
-              <Button className="w-full bg-cyan-500 hover:bg-cyan-600 text-white">
+              <Button className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-full hover:from-cyan-600 hover:to-purple-700 transition-all duration-200">
                 <Edit className="w-5 h-5 mr-2" />
                 Edit Profile
               </Button>
             </Link>
+
             <Button
               asChild
               variant="outline"
-              className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
             >
               <Link to="/archive">
                 <Archive className="w-5 h-5 mr-2" />
                 View Archive
               </Link>
             </Button>
+
+            {/* --- Modern & Fun BIO CARD --- */}
+            <div className="mt-4 bg-gradient-to-br from-cyan-100 to-purple-200 dark:from-gray-800 dark:to-gray-900 p-5 rounded-2xl shadow-lg transform hover:shadow-xl transition-all duration-300">
+              <h3 className="text-lg font-extrabold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" /> About Me
+              </h3>
+              {isEditingBio ? (
+                <div className="space-y-3 animate-fade-in">
+                  <textarea
+                    value={bio}
+                    onChange={handleBioChange}
+                    placeholder="Share your awesome story! 🎉"
+                    className="w-full p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all duration-200 resize-y min-h-[100px]"
+                  />
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleSaveBio}
+                      className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white hover:from-cyan-600 hover:to-purple-700 rounded-full px-4 py-2 transition-all duration-200"
+                    >
+                      Save & Shine ✨
+                    </Button>
+                    <Button
+                      onClick={handleCancelBio}
+                      variant="outline"
+                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full px-4 py-2 transition-all duration-200"
+                    >
+                      Oops, Cancel!
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-white dark:bg-gray-800 p-3 rounded-lg shadow-inner">
+                    {bio || "No epic tale yet! Click 'Edit Profile' to unleash your vibe! 🚀"}
+                  </p>
+                  <Button
+                    onClick={handleEditBio}
+                    className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-full hover:from-cyan-600 hover:to-purple-700 transition-all duration-200 animate-pulse-slow"
+                  >
+                    <Edit className="w-5 h-5 mr-2" /> Edit My Story
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <Button
               variant="outline"
               size="icon"
-              className="self-end border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="self-end border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
             >
               <Settings className="w-5 h-5" />
             </Button>
           </div>
-          <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2 text-sm">
+
+          <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3 text-sm">
             <div className="flex justify-between text-gray-700 dark:text-gray-300">
               <span>My Events</span>
               <span>{events.length}</span>
             </div>
             <div className="flex justify-between text-gray-700 dark:text-gray-300">
-              <button onClick={openFollowers} className="font-semibold hover:underline">
+              <button onClick={openFollowers} className="font-semibold hover:underline text-cyan-600 dark:text-cyan-400">
                 Followers {followers}
               </button>
             </div>
             <div className="flex justify-between text-gray-700 dark:text-gray-300">
-              <button onClick={openFollowing} className="font-semibold hover:underline">
+              <button onClick={openFollowing} className="font-semibold hover:underline text-cyan-600 dark:text-cyan-400">
                 Following {following}
               </button>
             </div>
           </div>
         </aside>
-        <main className="flex-1 flex flex-col space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+        <main className="flex-1 flex flex-col space-y-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
-              <TabsList className="px-4 bg-white dark:bg-gray-800">
+              <TabsList className="px-6 bg-white dark:bg-gray-800">
                 {["My Events", "Interested", "Liked", "Attending", "Photos"].map((tab) => (
                   <TabsTrigger
                     key={tab}
@@ -245,35 +332,35 @@ export default function ProfilePage() {
                 ))}
               </TabsList>
             </Tabs>
-            <div className="p-4">
+            <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-b-2xl">
               {isLoading ? (
-                <div className="flex justify-center items-center h-32">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+                <div className="flex justify-center items-center h-48">
+                  <Loader2 className="w-10 h-10 animate-spin text-gray-500" />
                 </div>
               ) : error ? (
-                <div className="flex flex-col items-center justify-center h-32 gap-2">
-                  <p className="text-red-500">{error}</p>
-                  <Button variant="outline" onClick={handleRetry} className="mt-2">
+                <div className="flex flex-col items-center justify-center h-48 gap-4">
+                  <p className="text-red-500 text-lg">{error}</p>
+                  <Button variant="outline" onClick={handleRetry} className="bg-gradient-to-r from-cyan-400 to-blue-500 text-white hover:from-cyan-500 hover:to-blue-600 rounded-full px-6 py-2">
                     Try Again
                   </Button>
                 </div>
               ) : events.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-32 gap-4">
-                  <p className="text-gray-500">No events found</p>
+                <div className="flex flex-col items-center justify-center h-48 gap-6">
+                  <p className="text-gray-500 text-xl">No events found</p>
                   <Link to="/new-event">
-                    <Button variant="default" className="bg-cyan-500 hover:bg-cyan-600">
+                    <Button variant="default" className="bg-gradient-to-r from-cyan-400 to-purple-500 text-white hover:from-cyan-500 hover:to-purple-600 rounded-full px-6 py-3">
                       Create Your First Event
                     </Button>
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {events.map((event) => (
                     <div
                       key={event.id}
-                      className="bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                      className="bg-white dark:bg-gray-800 rounded-xl shadow-md flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-2"
                     >
-                      <div className="h-32 bg-gray-100 dark:bg-gray-700 relative">
+                      <div className="h-40 bg-gray-100 dark:bg-gray-700 relative">
                         {event.bannerUrl && !imageError[event.id] ? (
                           <img
                             src={event.bannerUrl}
@@ -283,29 +370,29 @@ export default function ProfilePage() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <CalIcon className="w-8 h-8 text-gray-300 dark:text-gray-500" aria-hidden="true" />
+                            <CalIcon className="w-12 h-12 text-gray-300 dark:text-gray-500" aria-hidden="true" />
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 px-2 py-1 bg-cyan-500 text-white text-xs rounded-full">
+                        <div className="absolute top-2 right-2 px-2 py-1 bg-cyan-500 text-white text-sm rounded-full">
                           {event.visibility}
                         </div>
                       </div>
                       <div className="p-4 flex-1">
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">{event.title}</h3>
-                        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex flex-col gap-1.5">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate text-lg">{event.title}</h3>
+                        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex flex-col gap-2">
                           <div className="flex items-center">
-                            <CalIcon className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                            <CalIcon className="w-5 h-5 mr-2 flex-shrink-0" />
                             <span className="truncate">{formatDateTime(event.startDate)}</span>
                           </div>
                           <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                            <MapPin className="w-5 h-5 mr-2 flex-shrink-0" />
                             <span className="truncate">{event.location}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="px-4 py-2 bg-cyan-500 flex justify-between items-center text-white text-sm">
+                      <div className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 flex justify-between items-center text-white text-sm">
                         <span className="capitalize truncate">{event.category}</span>
-                        <Link to={`/events/${event.id}`} className="text-white hover:text-cyan-100 text-xs font-medium">
+                        <Link to={`/events/${event.id}`} className="text-white hover:text-cyan-100 text-sm font-medium">
                           View Details →
                         </Link>
                       </div>

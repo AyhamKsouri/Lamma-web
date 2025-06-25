@@ -3,6 +3,10 @@ import api from './api';
 export interface AuthResponse {
   token: string;
   _id: string;
+  bio?: string;
+  email: string;
+  name: string;
+  profileImage?: string;
   role: string;
   [key: string]: any;
 }

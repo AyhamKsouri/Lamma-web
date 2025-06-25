@@ -1,5 +1,5 @@
 import { FC, useState, ChangeEvent, FormEvent } from "react";
-import { User, Camera, Save } from "lucide-react";
+import { User, Camera, Save, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +17,8 @@ const EditProfilePage: FC = () => {
   // Profile Info form fields
   const [formData, setFormData] = useState({
     name: user?.name || "",
-    email: user?.email || "",
     phone: user?.phone || "",
+    bio: user?.bio || "",
   });
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -91,30 +91,33 @@ const EditProfilePage: FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl animate-fade-in">
-      <div className="flex flex-col items-center gap-6 pb-6">
-        <Avatar className="h-24 w-24 border-2 border-primary">
-          <AvatarImage src={avatarPreview} alt="Profile picture" />
-          <AvatarFallback>
-            {user?.name?.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
+    <div className="container mx-auto px-4 py-12 max-w-3xl bg-gradient-to-br from-purple-100 to-blue-100 dark:from-gray-900 dark:to-gray-800 rounded-xl shadow-2xl animate-pulse-once">
+      <div className="flex flex-col items-center gap-8 pb-8 relative">
+        <div className="relative">
+          <Avatar className="h-32 w-32 border-4 border-cyan-400 shadow-lg transform hover:scale-105 transition-transform duration-300">
+            <AvatarImage src={avatarPreview} alt="Profile picture" className="rounded-full object-cover" />
+            <AvatarFallback className="bg-cyan-200 text-cyan-800 font-bold">
+              {user?.name?.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+          <Sparkles className="absolute -top-4 -right-4 h-8 w-8 text-yellow-400 animate-pulse" />
+        </div>
 
-        <label className="mt-2 flex cursor-pointer items-center gap-1 text-sm font-medium text-primary hover:text-primary/80">
-          <Camera className="h-4 w-4" />
-          <span>Change</span>
+        <label className="mt-4 flex cursor-pointer items-center gap-2 text-lg font-semibold text-cyan-600 hover:text-cyan-800 dark:text-cyan-300 dark:hover:text-cyan-500 transition-colors">
+          <Camera className="h-6 w-6" />
+          <span>Change Avatar</span>
           <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
         </label>
 
         {uploadProgress > 0 && (
-          <div className="w-full mt-2">
-            <div className="h-2 w-full bg-gray-200 rounded-full">
+          <div className="w-full mt-4">
+            <div className="h-3 w-full bg-gray-300 rounded-full overflow-hidden">
               <div
-                className="h-2 bg-cyan-500 rounded-full transition-all"
+                className="h-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               ></div>
             </div>
-            <div className="text-center text-sm text-gray-500 mt-1">
+            <div className="text-center text-md text-gray-700 dark:text-gray-300 mt-2 font-fun">
               {uploadProgress}%
             </div>
           </div>
@@ -122,37 +125,52 @@ const EditProfilePage: FC = () => {
 
         <Button
           onClick={handleUploadPicture}
-          className="mt-4 min-w-[140px]"
+          className="mt-6 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 transition-all duration-200"
           disabled={isUploading}
         >
-          {isUploading ? "Uploading..." : "Upload New Picture"}
+          {isUploading ? (
+            <>
+              <span className="mr-2">Uploading...</span>
+              <span className="animate-spin">✨</span>
+            </>
+          ) : "Upload New Avatar"}
         </Button>
       </div>
 
-      <form onSubmit={handleSaveProfileInfo} className="space-y-6 mt-8">
+      <form onSubmit={handleSaveProfileInfo} className="space-y-6 mt-10 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium mb-1">
+          <label htmlFor="name" className="block text-md font-medium mb-2 text-gray-900 dark:text-gray-100">
             Name
           </label>
-          <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+          <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required className="w-full border-cyan-300 focus:border-cyan-500 focus:ring-cyan-500" />
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1">
-            Email
-          </label>
-          <Input id="email" name="email" value={formData.email} onChange={handleInputChange} required />
-        </div>
-
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium mb-1">
+          <label htmlFor="phone" className="block text-md font-medium mb-2 text-gray-900 dark:text-gray-100">
             Phone Number
           </label>
-          <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} />
+          <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full border-cyan-300 focus:border-cyan-500 focus:ring-cyan-500" />
         </div>
 
-        <Button type="submit" className="w-full mt-4" disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save Profile Info"}
+        <div>
+          <label htmlFor="bio" className="block text-md font-medium mb-2 text-gray-900 dark:text-gray-100">
+            Bio
+          </label>
+          <Input id="bio" name="bio" value={formData.bio} onChange={handleInputChange} className="w-full border-cyan-300 focus:border-cyan-500 focus:ring-cyan-500" />
+        </div>
+
+        <Button type="submit" className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-full hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 transition-all duration-200">
+          {isSaving ? (
+            <>
+              <span className="mr-2">Saving...</span>
+              <span className="animate-spin">✨</span>
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-5 w-5" />
+              Save Profile
+            </>
+          )}
         </Button>
       </form>
     </div>
