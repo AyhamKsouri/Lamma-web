@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional custom styles */
+.events-admin-page {
+  @apply text-gray-800;
+}
+
+.events-admin-table th,
+.events-admin-table td {
+  @apply border-gray-200;
+}

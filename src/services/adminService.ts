@@ -1,4 +1,3 @@
-// src/services/adminService.ts
 import { apiClient } from "./api";
 
 // — Types ——————————————————————————————————————————————————————
@@ -125,11 +124,25 @@ export function deleteEvent(id: string): Promise<void> {
   return apiClient.delete<void>(`/api/admin/events/${id}`);
 }
 
+export interface AuditLogEvent {
+  userId: string;
+  action: string;
+  resource: string;
+  metadata: Record<string, any>;
+}
+
+export const logEvent = async ({ userId, action, resource, metadata }: AuditLogEvent) => {
+  console.log("Logging event:", { userId, action, resource, metadata });
+  await apiClient.post('/api/auditlog/audit', { userId, action, resource, metadata });
+};
+export function getSoftDeletedEvents(): Promise<EventRecord[]> {
+  return apiClient.get<EventRecord[]>("/api/admin/events/soft-deleted");
+}
+
 export async function updateUserStatus(
   id: string,
   banned: boolean
 ): Promise<UserRecord> {
-  // note: apiClient.put<T> should resolve to T directly
   const data = await apiClient.put<UpdateStatusResponse>(
     `/api/admin/users/${id}/ban`,
     { banned }

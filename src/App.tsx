@@ -27,6 +27,7 @@ import CreatorEventDetails from './pages/user/creatorEventDetails';
 import ReportsPage from './pages/admin/Reportspage';
 import {Toaster} from 'react-hot-toast';
 import ReportDetailPage from "./pages/admin/ReportDetailsPage";
+import AuditLogPage from './pages/admin/AuditLogPage';
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
             <Route path="/admin/events" element={<EventsAdminPage />} />
             <Route path="/admin/reports" element={<ReportsPage />} />
             <Route path="/admin/reports/:id" element={<ReportDetailPage />} /> 
+            <Route path="/admin/audit" element={<AuditLogPage />} />
 
             {/* 404 inside public area */}
 

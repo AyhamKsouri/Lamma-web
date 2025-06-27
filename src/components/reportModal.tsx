@@ -16,7 +16,7 @@ interface ReportModalProps {
   open: boolean;
   onClose: () => void;
   targetId: string;
-  type: "event" | "comment";
+  type: "event" | "comment"| "media";
 }
 
 const ReportModal: React.FC<ReportModalProps> = ({ open, onClose, targetId, type }) => {

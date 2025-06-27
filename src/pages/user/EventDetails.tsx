@@ -1,5 +1,3 @@
-// src/pages/EventDetails.tsx
-
 import React, { FC, useState, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "@/services/api";
@@ -13,14 +11,12 @@ const API = import.meta.env.VITE_API_URL || '';
 import ReportModal from "@/components/reportModal";
 import FeedbackSection from "@/components/FeedbackSection";
 
-
-
-
-// helper to normalize a photo filename into a real <img> src
+// Helper to normalize a photo filename into a real <img> src
 function resolvePhoto(src: string) {
   if (src.startsWith('http')) return src;
   return `${API}/uploads/eventPhotos/${src}`;
 }
+
 interface UserData {
   _id: string;
   email: string;
@@ -42,6 +38,15 @@ interface Comment {
   createdAt: string;
   date: string;
   likes?: string[];
+}
+
+interface Media {
+  _id: string;
+  url: string;
+  uploadedBy: UserData;
+  createdAt: string;
+  likes: string[];
+  isLiked?: boolean;
 }
 
 interface EventData {
@@ -74,50 +79,68 @@ const EventDetails: FC = () => {
   const [copyError, setCopyError] = useState("");
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [media, setMedia] = useState<Media[]>([]);
+  const [mediaUploadError, setMediaUploadError] = useState("");
   const commentEndRef = useRef<HTMLDivElement>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
+  const mediaGalleryRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showGuestList, setShowGuestList] = useState(false);
   const navigate = useNavigate();
   const [partySize, setPartySize] = useState(1);
   const [reservation, setReservation] = useState<reservationService.Reservation | null>(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [reportData, setReportData] = useState<{ type: "event" | "comment"; id: string } | null>(null);
+  const [reportData, setReportData] = useState<{ type: "event" | "comment" | "media"; id: string } | null>(null);
 
   useEffect(() => {
-    if (!id) {
-      setError("No event ID provided.");
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    Promise.all([
-      api.get<EventData>(`/api/event/${id}`),
-      api.get<Comment[]>(`/api/comments/${id}`),
-    ])
-      .then(([eventRes, commentsRes]) => {
-        setEvent(eventRes.data);
-        setComments(commentsRes.data);
-        setLikesCount(eventRes.data?.likesCount || 0);
-        const currentUserId = localStorage.getItem("userId");
-        if (currentUserId && eventRes.data?.likes) {
-          setIsLiked(eventRes.data.likes.includes(currentUserId));
-        }
-        const userReservation = eventRes.data?.guests?.find(g => g.user._id === currentUserId);
-        setReservationState(userReservation ? "yes" : null);
-      })
-      .catch(err => {
-        console.error(err);
-        setError("Failed to load event or comments.");
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
-  // Determine if this event has already occurred:
+  if (!id) {
+    setError("No event ID provided.");
+    setLoading(false);
+    return;
+  }
+  setLoading(true);
+  Promise.all([
+    api.get<EventData>(`/api/event/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    }),
+    api.get<Comment[]>(`/api/comments/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    }),
+    api.get<Media[]>(`/api/eventmedia/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    }).catch(err => {
+      console.error("Media fetch error:", err.response?.data || err);
+      return { data: [] };
+    }),
+  ])
+    .then(([eventRes, commentsRes, mediaRes]) => {
+      setEvent(eventRes.data);
+      setComments(commentsRes.data);
+      setMedia(mediaRes.data.map(m => ({
+        ...m,
+        isLiked: user?._id ? m.likes.includes(user._id) : false,
+      })));
+      setLikesCount(eventRes.data?.likesCount || 0);
+      const currentUserId = user?._id || localStorage.getItem("userId");
+      if (currentUserId && eventRes.data?.likes) {
+        setIsLiked(eventRes.data.likes.includes(currentUserId));
+      }
+      const userReservation = eventRes.data?.guests?.find(g => g.user._id === currentUserId);
+      setReservationState(userReservation ? "yes" : null);
+    })
+    .catch(err => {
+      console.error("Overall fetch error:", err);
+      setError("Failed to load event or comments.");
+    })
+    .finally(() => setLoading(false));
+}, [id, user]);
+
   const isPast = event
     ? new Date(event.startDate).getTime() < Date.now()
     : false;
+
   useEffect(() => {
     if (event && user && event.createdBy?._id === user._id) {
-      // you’re the creator—go to the creator page
       navigate(`/events/${event._id}/creator`, { replace: true });
     }
   }, [event, user, navigate]);
@@ -126,22 +149,20 @@ const EventDetails: FC = () => {
     commentEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [comments]);
 
-
   async function handleMyRSVP(choice: "yes" | "maybe" | "no") {
-    if (!id) return
+    if (!id) return;
     try {
       const { data } = await api.post<{ guests: Guest[] }>(
         `/api/event/${id}/rsvp`,
         { status: choice }
-      )
-      setEvent(e => e ? { ...e, guests: data.guests } : e)
-      toast.success(`RSVP set to "${choice}"!`)
+      );
+      setEvent(e => e ? { ...e, guests: data.guests } : e);
+      toast.success(`RSVP set to "${choice}"!`);
     } catch (err: any) {
-      console.error(err)
-      toast.error(err.response?.data?.error || "Failed to update RSVP")
+      console.error(err);
+      toast.error(err.response?.data?.error || "Failed to update RSVP");
     }
   }
-
 
   const handleToggleLike = async () => {
     if (!id) return;
@@ -154,6 +175,58 @@ const EventDetails: FC = () => {
       setError("Failed to toggle like.");
     }
   };
+
+ const handleMediaLike = async (mediaId: string) => {
+  if (!user) return;
+  try {
+    const response = await api.put(`/api/eventmedia/${mediaId}/like`, {}, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
+    setMedia(prev =>
+      prev.map(m =>
+        m._id === mediaId ? { ...m, isLiked: !m.isLiked, likes: response.data.likes } : m
+      )
+    );
+    toast.success("Media like updated!");
+  } catch (err: any) {
+    console.error("Failed to toggle media like:", err.response?.data || err);
+    toast.error("Failed to like media.");
+  }
+};
+
+  const handleUploadMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!id || !user || !e.target.files?.length || !isPast) return; // Only for past events
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("media", file);
+    formData.append("event", id); // Match req.body.event
+
+    try {
+      const response = await api.post(`/api/eventmedia/media`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const newMedia: Media = {
+        ...response.data[0], // Adjust based on service response (array from insertMany)
+        isLiked: false,
+        uploadedBy: {
+          _id: user._id,
+          email: user.email,
+          userInfo: {
+            name: user.userInfo?.name || user.name || "Anonymous",
+            profileImage: user.userInfo?.profileImage || "",
+          },
+        },
+      };
+      setMedia(prev => [newMedia, ...prev]);
+      setMediaUploadError("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.success("Media uploaded successfully!");
+    } catch (err: any) {
+      console.error("Media upload error:", err.response?.data || err);
+      setMediaUploadError(err.response?.data?.message || "Failed to upload media.");
+      toast.error("Failed to upload media.");
+    }
+  };
   const handleReserve = async () => {
     try {
       const res = await reservationService.makeReservation(id!, partySize);
@@ -163,7 +236,6 @@ const EventDetails: FC = () => {
       toast.error(err.response?.data?.error || "Failed to reserve");
     }
   };
-
 
   const handleAddComment = async () => {
     if (!commentText.trim()) {
@@ -233,7 +305,6 @@ const EventDetails: FC = () => {
 
   const displayDate = `${new Date(event.startDate).toLocaleDateString()} • ${event.startTime}`;
 
-
   return (
     <>
       <div className="max-w-4xl mx-auto py-6 px-4 space-y-6 animate-fade-in">
@@ -261,7 +332,6 @@ const EventDetails: FC = () => {
             }}
           />
         </div>
-
 
         {/* Title & Info */}
         <div className="space-y-2">
@@ -310,6 +380,7 @@ const EventDetails: FC = () => {
         >
           🚩 Report Event
         </Button>
+
         {/* Photo Gallery */}
         {(event.photos ?? []).length > 0 && (
           <div className="relative">
@@ -320,7 +391,6 @@ const EventDetails: FC = () => {
             >
               ◀
             </button>
-
             <div ref={galleryRef} className="flex space-x-4 overflow-x-auto py-2">
               {event.photos!.map((file, idx) => (
                 <img
@@ -335,7 +405,6 @@ const EventDetails: FC = () => {
                 />
               ))}
             </div>
-
             <button
               onClick={() => galleryRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
               aria-label="Next photos"
@@ -345,6 +414,104 @@ const EventDetails: FC = () => {
             </button>
           </div>
         )}
+
+        {/* Event Memories Gallery for Past Events */}
+        {isPast && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Event Memories</h2>
+            {user && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  ref={fileInputRef}
+                  onChange={handleUploadMedia}
+                  className="p-2 border rounded-lg"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-indigo-600 text-white hover:bg-indigo-700 px-3 sm:px-4 py-2 rounded-lg"
+                >
+                  Upload Media
+                </Button>
+              </div>
+            )}
+            {mediaUploadError && <p className="text-red-500 text-sm">{mediaUploadError}</p>}
+            {media.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => mediaGalleryRef.current?.scrollBy({ left: -300, behavior: 'smooth' })}
+                  aria-label="Previous media"
+                  className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-3 rounded-full shadow-lg z-10 hover:bg-gray-100 transition-all duration-200"
+                >
+                  ◀
+                </button>
+                <div ref={mediaGalleryRef} className="flex space-x-4 overflow-x-auto py-2">
+                  {media.map((item) => (
+                    <div key={item._id} className="relative flex-shrink-0 w-64 h-40">
+                      {item.url.match(/\.(mp4|webm|ogg)$/i) ? (
+                        <video
+                          src={resolvePhoto(item.url)}
+                          controls
+                          className="w-full h-full object-cover rounded-lg"
+                          onError={e => {
+                            (e.currentTarget as HTMLVideoElement).poster = '/default-photo.png';
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src={resolvePhoto(item.url)}
+                          alt={`Media uploaded by ${item.uploadedBy.userInfo?.name || 'Anonymous'}`}
+                          className="w-full h-full object-cover rounded-lg"
+                          loading="lazy"
+                          onError={e => {
+                            (e.currentTarget as HTMLImageElement).src = '/default-photo.png';
+                          }}
+                        />
+                      )}
+                      <div className="absolute bottom-2 left-2 flex space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleMediaLike(item._id)}
+                          className={`${item.isLiked ? 'bg-red-600' : 'bg-gray-200'
+                            } text-white px-4 py-2 rounded-full font-semibold text-lg shadow-md hover:${item.isLiked ? 'bg-red-700' : 'bg-gray-300'
+                            } transform hover:scale-105 transition-all duration-200`}
+                        >
+                          {item.isLiked ? 'Unlike' : 'Like'} ({item.likes.length})
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="bg-yellow-400 text-white px-4 py-2 rounded-full font-semibold text-lg shadow-md hover:bg-yellow-500 transform hover:scale-105 transition-all duration-200"
+                          onClick={() => {
+                            setReportData({ type: "media", id: item._id });
+                            setReportModalOpen(true);
+                          }}
+                        >
+                          🚩 Report
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Uploaded by {item.uploadedBy.userInfo?.name || 'Anonymous'} •{' '}
+                        {format(new Date(item.createdAt), 'yyyy-MM-dd')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => mediaGalleryRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
+                  aria-label="Next media"
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-3 rounded-full shadow-lg z-10 hover:bg-gray-100 transition-all duration-200"
+                >
+                  ▶
+                </button>
+              </div>
+            )}            {media.length === 0 && (
+              <p className="text-gray-500 text-center py-4">No media uploaded yet.</p>
+            )}
+          </div>
+        )}
+
         {/* Reservation (RSVP) */}
         {!isPast && (
           <div className="space-y-3">
@@ -409,29 +576,29 @@ const EventDetails: FC = () => {
           )}
         </div>
 
-
         {/* Guest summary stats */}
         {!isPast && (
-          <div className="flex items-center space-x-4 mt-6 flex-wrap">          {(["yes", "maybe", "no"] as const).map(status => {
-            const emoji = status === "yes" ? "✅" : status === "maybe" ? "🤔" : "❌";
-            const count = event.guests?.filter(g => g.rsvp === status).length || 0;
-            const bg =
-              status === "yes"
-                ? "bg-indigo-100 text-indigo-800"
-                : status === "maybe"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-red-100 text-red-800";
-            return (
-              <button
-                key={status}
-                onClick={() => setShowGuestList(true)}
-                className={`${bg} px-3 py-1 rounded-full hover:opacity-90 transition flex items-center space-x-1`}
-              >
-                <span>{emoji}</span>
-                <span>{count}</span>
-              </button>
-            );
-          })}
+          <div className="flex items-center space-x-4 mt-6 flex-wrap">
+            {(["yes", "maybe", "no"] as const).map(status => {
+              const emoji = status === "yes" ? "✅" : status === "maybe" ? "🤔" : "❌";
+              const count = event.guests?.filter(g => g.rsvp === status).length || 0;
+              const bg =
+                status === "yes"
+                  ? "bg-indigo-100 text-indigo-800"
+                  : status === "maybe"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-red-100 text-red-800";
+              return (
+                <button
+                  key={status}
+                  onClick={() => setShowGuestList(true)}
+                  className={`${bg} px-3 py-1 rounded-full hover:opacity-90 transition flex items-center space-x-1`}
+                >
+                  <span>{emoji}</span>
+                  <span>{count}</span>
+                </button>
+              );
+            })}
             <button
               onClick={() => setShowGuestList(true)}
               className="ml-4 text-indigo-600 underline hover:text-indigo-800"
@@ -440,6 +607,7 @@ const EventDetails: FC = () => {
             </button>
           </div>
         )}
+
         {/* Map */}
         <div className="w-full h-64 rounded-lg overflow-hidden">
           <iframe
@@ -478,15 +646,6 @@ const EventDetails: FC = () => {
                     >
                       Report
                     </Button>
-
-                    {reportData && (
-                      <ReportModal
-                        open={reportModalOpen}
-                        onClose={() => setReportModalOpen(false)}
-                        targetId={reportData.id}
-                        type={reportData.type}
-                      />
-                    )}
                   </li>
                 ))
               )}
@@ -512,7 +671,6 @@ const EventDetails: FC = () => {
           </div>
         )}
 
-
         {/* Actions */}
         <div className="flex flex-wrap gap-4">
           <Button
@@ -534,16 +692,15 @@ const EventDetails: FC = () => {
           </a>
         </div>
       </div>
-            { /* ─── Feedback section for past events ────────────────────────────────────── */ }
+
+      {/* Feedback section for past events */}
       {isPast && id && (
         <div className="max-w-4xl mx-auto py-6 px-4">
           <FeedbackSection eventId={id} />
         </div>
       )}
- 
 
-
-      {/* Modal Overlay */}
+      {/* Modal Overlay for Guest List */}
       {showGuestList && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center p-6 bg-black bg-opacity-50 backdrop-blur-sm"
@@ -579,14 +736,12 @@ const EventDetails: FC = () => {
                           <img
                             src={
                               g.user.userInfo?.profileImage
-                                ? `${import.meta.env.VITE_API_URL}/uploads/profileImages/${g.user.userInfo.profileImage}`
+                                ? `${import.meta.env.VITE_API_URL}/Uploads/profileImages/${g.user.userInfo.profileImage}`
                                 : "/images/profile-pic.png"
                             }
                             alt={g.user.userInfo?.name || g.user.email}
                             className="w-8 h-8 rounded-full object-cover border"
                           />
-
-
                           <span className="text-gray-800 dark:text-gray-200">
                             {g.user.userInfo?.name || "Anonymous"}
                           </span>
@@ -604,6 +759,16 @@ const EventDetails: FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Report Modal */}
+      {reportData && (
+        <ReportModal
+          open={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          targetId={reportData.id}
+          type={reportData.type}
+        />
       )}
     </>
   );
