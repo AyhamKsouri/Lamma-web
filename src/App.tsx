@@ -28,6 +28,8 @@ import ReportsPage from './pages/admin/Reportspage';
 import {Toaster} from 'react-hot-toast';
 import ReportDetailPage from "./pages/admin/ReportDetailsPage";
 import AuditLogPage from './pages/admin/AuditLogPage';
+import SettingsPage from './pages/user/settings_page';      
+
 
 function App() {
   return (
@@ -61,6 +63,8 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="edit-profile" element={<EditProfile />} />
             <Route path="/profile/:id" element={<UserProfile />} />
+            <Route path="settings" element={<SettingsPage />} />
+            
             
             
 

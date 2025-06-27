@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Link } from "react-router-dom";
+import { Link , useNavigate} from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Edit, Archive, Settings, Calendar as CalIcon, Users, Loader2, MapPin, Sparkles } from "lucide-react";
@@ -11,6 +11,7 @@ import { getMyEvents, getGoingEvents, getInterestedEvents, getLikedEvents, Event
 import { AuthError } from "@/services/api";
 import { format, parseISO, isValid } from "date-fns";
 import { fixProfileImagePath } from "@/lib/urlFix";
+
 
 interface User {
   _id: string;
@@ -69,6 +70,8 @@ export default function ProfilePage() {
   const [imageError, setImageError] = useState<{ [key: string]: boolean }>({});
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bio, setBio] = useState(user?.bio || '');
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     console.log("User object:", user);
@@ -290,11 +293,13 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
-
+              
             <Button
               variant="outline"
               size="icon"
               className="self-end border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200"
+                    onClick={() => navigate('/settings')}
+
             >
               <Settings className="w-5 h-5" />
             </Button>
